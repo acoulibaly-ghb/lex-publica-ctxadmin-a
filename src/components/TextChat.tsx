@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { GoogleGenAI, Modality } from "@google/genai";
 import { Message } from '../types';
@@ -95,7 +96,7 @@ const cleanTextForTTS = (text: string) => {
 
 const TextChat: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'model', text: '### Bonjour !\n\nJe suis votre assistant juridique spécialisé en droit administratif.\n\nJe peux vous aider sur les thèmes suivants :\n- **Les actes administratifs unilatéraux**\n- **La police administrative**\n- **Le service public**\n\nQuelle est votre question ?', timestamp: new Date() }
+    { role: 'model', text: '### Bonjour !\n\nJe suis **ADA**, votre assistante juridique spécialisée en Contentieux International.\n\nJe peux vous aider sur les thèmes suivants :\n- **La Cour Internationale de Justice**\n- **La procédure contentieuse et consultative**\n- **La responsabilité internationale de l\'État**\n\nQuelle est votre question ?', timestamp: new Date() }
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -105,12 +106,13 @@ const TextChat: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   
   // Stream refs
   const audioQueueRef = useRef<string[]>([]);
   const isProcessingQueueRef = useRef(false);
 
-  const API_KEY = import.meta.env.VITE_API_KEY;
+  const API_KEY = process.env.API_KEY;
 
   const suggestions = [
     "Qu'est-ce qu'un service public ?",
@@ -126,6 +128,14 @@ const TextChat: React.FC = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Auto-resize textarea
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 150)}px`;
+    }
+  }, [input]);
 
   useEffect(() => {
     return () => {
@@ -261,6 +271,9 @@ const TextChat: React.FC = () => {
     
     setMessages(prev => [...prev, userMsg]);
     setInput('');
+    // Reset textarea height
+    if (textareaRef.current) textareaRef.current.style.height = 'auto';
+    
     const currentAttachment = attachment; // Capture current attachment
     clearAttachment(); // Clear UI immediately
     setIsLoading(true);
@@ -346,6 +359,13 @@ const TextChat: React.FC = () => {
   };
 
   const handleSend = () => sendMessage(input);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
 
   // Icons
   const UserIcon = () => (
@@ -442,7 +462,7 @@ const TextChat: React.FC = () => {
             </div>
         )}
 
-        <div className="relative flex items-center gap-2 bg-slate-50 p-2 rounded-3xl border border-slate-200 focus-within:border-indigo-400 focus-within:ring-4 focus-within:ring-indigo-100 transition-all shadow-inner">
+        <div className="relative flex items-end gap-2 bg-slate-50 p-2 rounded-3xl border border-slate-200 focus-within:border-indigo-400 focus-within:ring-4 focus-within:ring-indigo-100 transition-all shadow-inner">
           
           {/* File Input Button */}
           <input 
@@ -454,24 +474,26 @@ const TextChat: React.FC = () => {
           />
           <button 
             onClick={() => fileInputRef.current?.click()}
-            className="p-2 text-slate-400 hover:text-indigo-600 transition-colors rounded-full hover:bg-indigo-50"
+            className="p-2 mb-1 text-slate-400 hover:text-indigo-600 transition-colors rounded-full hover:bg-indigo-50"
             title="Joindre un document (PDF ou Image)"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
           </button>
 
-          <input
-            type="text"
+          <textarea
+            ref={textareaRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+            onKeyDown={handleKeyDown}
             placeholder={attachment ? "Posez une question sur ce document..." : "Posez votre question juridique..."}
-            className="flex-1 bg-transparent px-2 py-2 focus:outline-none text-slate-700 placeholder-slate-400"
+            className="flex-1 bg-transparent px-2 py-3 focus:outline-none text-slate-700 placeholder-slate-400 resize-none max-h-[150px] overflow-y-auto leading-normal"
+            rows={1}
           />
+          
           <button
             onClick={handleSend}
             disabled={isLoading || (!input.trim() && !attachment)}
-            className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white p-3 rounded-2xl transition-all shadow-md hover:shadow-lg flex-shrink-0"
+            className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white p-3 rounded-2xl transition-all shadow-md hover:shadow-lg flex-shrink-0 mb-0.5"
           >
             <svg className="w-5 h-5 transform rotate-90 translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
           </button>
