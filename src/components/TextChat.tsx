@@ -112,7 +112,7 @@ const TextChat: React.FC = () => {
   const audioQueueRef = useRef<string[]>([]);
   const isProcessingQueueRef = useRef(false);
 
-  const API_KEY = process.env.API_KEY;
+  const API_KEY = import.meta.env.VITE_API_KEY;
 
   const suggestions = [
     "Qu'est-ce qu'un service public ?",
