@@ -483,8 +483,8 @@ const TextChat: React.FC = () => {
       
       {/* SIDEBAR (HISTORY) - Plus étroite (w-64 au lieu de w-80) */}
       <div 
-        className={`absolute inset-y-0 left-0 z-30 w-64 bg-white shadow-xl transform transition-transform duration-300 ease-in-out ${showHistory ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 md:w-64 border-r border-slate-100 flex flex-col`}
-      >
+       className={`absolute inset-y-0 left-0 z-30 w-64 bg-white shadow-xl transform transition-transform duration-300 ease-in-out ${showHistory ? 'translate-x-0' : '-translate-x-full'} border-r border-slate-100 flex flex-col`}        
+       >
           <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
               <h2 className="font-bold text-slate-700 flex items-center gap-2">
                 <svg className="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
@@ -536,7 +536,7 @@ const TextChat: React.FC = () => {
       </div>
 
       {/* MAIN CHAT AREA - Plus large avec marge gauche (ml-4) */}
-      <div className="flex-1 flex flex-col relative w-full min-w-0 bg-white ml-50">
+      <div className="flex-1 flex flex-col relative w-full min-w-0 bg-white">
         
         {/* Mobile History Toggle */}
         <div className="md:hidden absolute top-4 left-4 z-20">
