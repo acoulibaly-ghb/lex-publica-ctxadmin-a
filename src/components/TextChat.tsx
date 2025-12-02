@@ -97,7 +97,7 @@ const TextChat: React.FC = () => {
   // --- STATE ---
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
-  const [showHistory, setShowHistory] = useState(false);
+  const [showHistory, setShowHistory] = useState(false); // Sidebar visibility
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -122,26 +122,23 @@ const TextChat: React.FC = () => {
   };
 
   const suggestions = [
-    "Qu'est-ce qu'un service public ?",
-    "L'arrêt Benjamin",
-    "Différence SPA / SPIC",
-    "Acte réglementaire ?"
+    "Qu'est-ce qu'un différend ?",
+    "L'affaire Mavrommatis",
+    "Avis consultatif vs Arrêt",
+    "Juge ad hoc"
   ];
 
   // --- HISTORY MANAGEMENT ---
 
-  // Load sessions from LocalStorage on mount
   useEffect(() => {
     const savedSessions = localStorage.getItem('juriste_admin_sessions');
     if (savedSessions) {
         try {
             const parsed: ChatSession[] = JSON.parse(savedSessions);
-            // Restore Date objects
             const hydratedSessions = parsed.map(s => ({
                 ...s,
                 messages: s.messages.map(m => ({ ...m, timestamp: new Date(m.timestamp) }))
             }));
-            // Sort by recent
             hydratedSessions.sort((a, b) => b.lastModified - a.lastModified);
             setSessions(hydratedSessions);
             
@@ -159,7 +156,6 @@ const TextChat: React.FC = () => {
     }
   }, []);
 
-  // Save sessions to LocalStorage whenever they change
   useEffect(() => {
     if (sessions.length > 0) {
         localStorage.setItem('juriste_admin_sessions', JSON.stringify(sessions));
@@ -177,7 +173,7 @@ const TextChat: React.FC = () => {
       setSessions(prev => [newSession, ...prev]);
       setCurrentSessionId(newId);
       setMessages(newSession.messages);
-      setShowHistory(false); // Close sidebar on mobile/small screens if needed
+      setShowHistory(false);
   };
 
   const loadSession = (session: ChatSession) => {
@@ -190,7 +186,7 @@ const TextChat: React.FC = () => {
       e.stopPropagation();
       const newSessions = sessions.filter(s => s.id !== id);
       setSessions(newSessions);
-      localStorage.setItem('juriste_admin_sessions', JSON.stringify(newSessions)); // Force save immediately
+      localStorage.setItem('juriste_admin_sessions', JSON.stringify(newSessions));
       
       if (currentSessionId === id) {
           if (newSessions.length > 0) {
@@ -204,17 +200,16 @@ const TextChat: React.FC = () => {
   const updateCurrentSession = (newMessages: Message[]) => {
       if (!currentSessionId) return;
       
-      setMessages(newMessages); // Update UI state
+      setMessages(newMessages);
 
       setSessions(prevSessions => {
           return prevSessions.map(session => {
               if (session.id === currentSessionId) {
-                  // Generate a title from the first user message if it's still generic
                   let title = session.title;
                   if (session.title === 'Nouvelle conversation' && newMessages.length > 1) {
                       const firstUserMsg = newMessages.find(m => m.role === 'user');
                       if (firstUserMsg) {
-                          title = firstUserMsg.text.slice(0, 30) + (firstUserMsg.text.length > 30 ? '...' : '');
+                          title = firstUserMsg.text.slice(0, 35) + (firstUserMsg.text.length > 35 ? '...' : '');
                       }
                   }
                   return {
@@ -225,10 +220,9 @@ const TextChat: React.FC = () => {
                   };
               }
               return session;
-          }).sort((a, b) => b.lastModified - a.lastModified); // Keep most recent at top
+          }).sort((a, b) => b.lastModified - a.lastModified);
       });
   };
-
 
   // --- UI EFFECTS ---
 
@@ -236,7 +230,6 @@ const TextChat: React.FC = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Auto-resize textarea
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
@@ -363,7 +356,6 @@ const TextChat: React.FC = () => {
         return;
     }
 
-    // Audio Reset
     if (audioContextRef.current) {
         await audioContextRef.current.close();
         audioContextRef.current = null;
@@ -375,7 +367,6 @@ const TextChat: React.FC = () => {
     const userMsgText = attachment ? `[Fichier joint: ${attachment.file.name}] ${text}` : text;
     const userMsg: Message = { role: 'user', text: userMsgText, timestamp: new Date() };
     
-    // Update UI with User Message immediately
     const msgsWithUser = [...messages, userMsg];
     updateCurrentSession(msgsWithUser);
 
@@ -404,13 +395,6 @@ const TextChat: React.FC = () => {
         parts.push({ text: "Analyse ce document et résume-le." });
       }
 
-      // Prepare History (limit context if needed, but 2.5 flash has large window)
-      // Convert app messages to API content format if needed for history context
-      // For simplicity here, we send current prompt + system instruction context mostly.
-      // To enable conversation history memory for the AI, we should build the history content block.
-      // Here we keep it simple: System Instruction + Current Message (stateless for now to keep tokens low, or implement history context builder)
-      // *Better for "chat":* Send previous messages.
-      
       const historyContent = messages.map(m => ({
           role: m.role === 'model' ? 'model' : 'user',
           parts: [{ text: m.text }]
@@ -427,7 +411,6 @@ const TextChat: React.FC = () => {
       let fullText = '';
       let sentenceBuffer = '';
       
-      // Add placeholder for model
       const msgsWithModel = [...msgsWithUser, { role: 'model', text: '', timestamp: new Date() } as Message];
       updateCurrentSession(msgsWithModel);
 
@@ -437,12 +420,10 @@ const TextChat: React.FC = () => {
             fullText += chunkText;
             sentenceBuffer += chunkText;
   
-            // Update UI progressively
             updateCurrentSession(msgsWithModel.map((m, i) => 
                 i === msgsWithModel.length - 1 ? { ...m, text: fullText } : m
             ));
   
-            // TTS Queueing
             const sentences = sentenceBuffer.match(/[^.?!]+[.?!]+(\s|$)/g);
             if (sentences) {
                 sentences.forEach(sentence => {
@@ -482,7 +463,6 @@ const TextChat: React.FC = () => {
 
   const handleSend = () => sendMessage(input);
 
-  // Icons
   const UserIcon = () => (
     <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-white shadow-md ring-2 ring-white">
       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
@@ -501,12 +481,15 @@ const TextChat: React.FC = () => {
   return (
     <div className="flex h-[600px] relative bg-slate-50/50 overflow-hidden">
       
-      {/* SIDEBAR (HISTORY) */}
+      {/* SIDEBAR (HISTORY) - Increased width to w-80 */}
       <div 
-        className={`absolute inset-y-0 left-0 z-30 w-64 bg-white shadow-xl transform transition-transform duration-300 ease-in-out ${showHistory ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 md:w-64 border-r border-slate-100 flex flex-col`}
+        className={`absolute inset-y-0 left-0 z-30 w-80 bg-white shadow-xl transform transition-transform duration-300 ease-in-out ${showHistory ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 md:w-80 border-r border-slate-100 flex flex-col`}
       >
-          <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-              <h2 className="font-bold text-slate-700">Historique</h2>
+          <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+              <h2 className="font-bold text-slate-700 flex items-center gap-2">
+                <svg className="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                Historique
+              </h2>
               <button onClick={() => setShowHistory(false)} className="md:hidden text-slate-400 hover:text-slate-600">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
               </button>
@@ -515,30 +498,37 @@ const TextChat: React.FC = () => {
           <div className="p-4">
               <button 
                 onClick={createNewSession}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors text-sm font-medium shadow-sm"
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors text-sm font-semibold shadow-sm active:scale-95 transform transition-transform"
               >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
                   Nouvelle discussion
               </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-2 space-y-1">
+          <div className="flex-1 overflow-y-auto px-3 space-y-1 pb-4">
               {sessions.map(session => (
                   <div 
                     key={session.id}
-                    className={`group flex items-center gap-2 p-3 rounded-xl cursor-pointer transition-all ${currentSessionId === session.id ? 'bg-indigo-50 text-indigo-700' : 'hover:bg-slate-100 text-slate-600'}`}
+                    className={`group flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all border border-transparent ${currentSessionId === session.id ? 'bg-indigo-50 text-indigo-800 border-indigo-100 shadow-sm' : 'hover:bg-slate-50 text-slate-600 hover:border-slate-100'}`}
                     onClick={() => loadSession(session)}
                   >
-                      <svg className={`w-4 h-4 flex-shrink-0 ${currentSessionId === session.id ? 'text-indigo-500' : 'text-slate-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
-                      <div className="flex-1 truncate text-sm font-medium">
-                          {session.title}
+                      <div className={`p-2 rounded-lg ${currentSessionId === session.id ? 'bg-white text-indigo-500 shadow-sm' : 'bg-slate-100 text-slate-400 group-hover:bg-white'}`}>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                          <div className="truncate text-sm font-medium leading-5">
+                              {session.title}
+                          </div>
+                          <div className="text-[10px] opacity-60 truncate">
+                              {new Date(session.lastModified).toLocaleDateString()} • {new Date(session.lastModified).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                          </div>
                       </div>
                       <button 
                         onClick={(e) => deleteSession(e, session.id)}
-                        className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-red-500 transition-opacity"
+                        className="opacity-0 group-hover:opacity-100 p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
                         title="Supprimer"
                       >
-                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                       </button>
                   </div>
               ))}
@@ -546,7 +536,7 @@ const TextChat: React.FC = () => {
       </div>
 
       {/* MAIN CHAT AREA */}
-      <div className="flex-1 flex flex-col relative w-full">
+      <div className="flex-1 flex flex-col relative w-full min-w-0 bg-white">
         
         {/* Mobile History Toggle */}
         <div className="md:hidden absolute top-4 left-4 z-20">
