@@ -345,7 +345,7 @@ const TextChat: React.FC = () => {
   };
 
   const handleQuizStart = () => sendMessage("Lance une session de quiz interactif. Pose-moi une question de cours pour me tester (collez-moi).");
-  const handleWhoAmI = () => sendMessage("Qui êtes-vous ?");
+  // 02/12/2025 20:51:15 const handleWhoAmI = () => sendMessage("Qui êtes-vous ?");
 
   const sendMessage = async (text: string) => {
     if ((!text.trim() && !attachment) || isLoading) return;
