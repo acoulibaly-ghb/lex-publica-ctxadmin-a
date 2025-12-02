@@ -536,7 +536,7 @@ const TextChat: React.FC = () => {
       </div>
 
       {/* MAIN CHAT AREA - Plus large avec marge gauche (ml-4) */}
-      <div className="flex-1 flex flex-col relative w-full min-w-0 bg-white ml-6">
+      <div className="flex-1 flex flex-col relative w-full min-w-0 bg-white ml-8">
         
         {/* Mobile History Toggle */}
         <div className="md:hidden absolute top-4 left-4 z-20">
