@@ -612,13 +612,15 @@ const TextChat: React.FC = () => {
                         Collez-moi !
                     </button>
                     
-                    <button 
-                        onClick={handleWhoAmI}
-                        className="whitespace-nowrap px-3 py-1.5 bg-teal-100 text-teal-700 text-xs font-bold rounded-full border border-teal-200 hover:bg-teal-200 hover:border-teal-300 transition-colors flex items-center gap-1 shadow-sm"
+                    {/* 02/12/2025 19:03:11 : Bouton superflu
+<button 
+    onClick={handleWhoAmI}
+    className="whitespace-nowrap px-3 py-1.5 bg-teal-100 text-teal-700 text-xs font-bold rounded-full border border-teal-200 hover:bg-teal-200 hover:border-teal-300 transition-colors flex items-center gap-1 shadow-sm"
 >
-<svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-Qui suis-je ?
+    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+    Qui suis-je ?
 </button>
+*/}
 <div className="w-px h-6 bg-slate-200 mx-1"></div>
                 {suggestions.map((s, i) => (
                     <button 
