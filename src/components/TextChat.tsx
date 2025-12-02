@@ -481,16 +481,16 @@ const TextChat: React.FC = () => {
   return (
     <div className="flex h-[600px] relative bg-slate-50/50 overflow-hidden">
       
-      {/* SIDEBAR (HISTORY) - Plus étroite (w-64 au lieu de w-80) */}
+      {/* SIDEBAR (HISTORY) - Toujours cachée par défaut, s'ouvre avec le bouton */}
       <div 
-       className={`absolute inset-y-0 left-0 z-30 w-64 bg-white shadow-xl transform transition-transform duration-300 ease-in-out ${showHistory ? 'translate-x-0' : '-translate-x-full'} border-r border-slate-100 flex flex-col`}        
-       >
+        className={`absolute inset-y-0 left-0 z-30 w-64 bg-white shadow-xl transform transition-transform duration-300 ease-in-out ${showHistory ? 'translate-x-0' : '-translate-x-full'} border-r border-slate-100 flex flex-col`}
+      >
           <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
               <h2 className="font-bold text-slate-700 flex items-center gap-2">
                 <svg className="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                 Historique
               </h2>
-              <button onClick={() => setShowHistory(false)} className="md:hidden text-slate-400 hover:text-slate-600">
+              <button onClick={() => setShowHistory(false)} className="text-slate-400 hover:text-slate-600">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
               </button>
           </div>
@@ -535,14 +535,15 @@ const TextChat: React.FC = () => {
           </div>
       </div>
 
-      {/* MAIN CHAT AREA - Plus large avec marge gauche (ml-4) */}
+      {/* MAIN CHAT AREA - Pleine largeur avec bouton hamburger toujours visible */}
       <div className="flex-1 flex flex-col relative w-full min-w-0 bg-white">
         
-        {/* Mobile History Toggle */}
-        <div className="md:hidden absolute top-4 left-4 z-20">
+        {/* Hamburger Button - Toujours visible */}
+        <div className="absolute top-4 left-4 z-20">
             <button 
                 onClick={() => setShowHistory(true)}
-                className="p-2 bg-white rounded-lg shadow-md border border-slate-100 text-slate-600"
+                className="p-2 bg-white rounded-lg shadow-md border border-slate-100 text-slate-600 hover:bg-slate-50 transition-colors"
+                title="Afficher l'historique"
             >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
             </button>
@@ -614,11 +615,11 @@ const TextChat: React.FC = () => {
                     <button 
                         onClick={handleWhoAmI}
                         className="whitespace-nowrap px-3 py-1.5 bg-teal-100 text-teal-700 text-xs font-bold rounded-full border border-teal-200 hover:bg-teal-200 hover:border-teal-300 transition-colors flex items-center gap-1 shadow-sm"
-                    >
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                       Qui suis-je ?
-                   </button>
-                   <div className="w-px h-6 bg-slate-200 mx-1"></div>
+>
+<svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+Qui suis-je ?
+</button>
+<div className="w-px h-6 bg-slate-200 mx-1"></div>
                 {suggestions.map((s, i) => (
                     <button 
                         key={i}
@@ -632,7 +633,6 @@ const TextChat: React.FC = () => {
         )}
 
         <div className="relative flex items-end gap-2 bg-slate-50 p-2 rounded-3xl border border-slate-200 focus-within:border-indigo-400 focus-within:ring-4 focus-within:ring-indigo-100 transition-all shadow-inner">
-        
         {/* File Input Button */}
         <input 
             type="file" 
@@ -672,4 +672,4 @@ const TextChat: React.FC = () => {
 </div>
 );
 };
-export default TextChat;
+export default TextChat; 
