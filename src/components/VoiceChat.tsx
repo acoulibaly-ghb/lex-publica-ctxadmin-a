@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { GoogleGenAI, LiveServerMessage, Modality } from '@google/genai';
 import { SYSTEM_INSTRUCTION } from '../constants';
 import { createPcmBlob, decodeAudioData } from '../utils/audio-utils';
-import { ChatSession, ChatMode } from '../types';
 import Visualizer from './Visualizer';
 
 const VoiceChat: React.FC = () => {
@@ -10,11 +9,6 @@ const VoiceChat: React.FC = () => {
   const [status, setStatus] = useState<'disconnected' | 'connecting' | 'listening' | 'speaking'>('disconnected');
   const [error, setError] = useState<string | null>(null);
   const [volume, setVolume] = useState(0);
-  
-  // History & Session Management
-  const [sessions, setSessions] = useState<ChatSession[]>([]);
-  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
-  const [showHistory, setShowHistory] = useState(false);
   
   // Transcription state
   const [currentTranscription, setCurrentTranscription] = useState('');
@@ -39,77 +33,6 @@ const VoiceChat: React.FC = () => {
 
   const API_KEY = import.meta.env.VITE_API_KEY;
 
-  // --- HISTORY LOGIC ---
-  useEffect(() => {
-    const savedSessions = localStorage.getItem('juriste_admin_sessions');
-    if (savedSessions) {
-        try {
-            const parsed: ChatSession[] = JSON.parse(savedSessions);
-            const voiceSessions = parsed.filter(s => s.mode === ChatMode.VOICE);
-            voiceSessions.sort((a, b) => b.lastModified - a.lastModified);
-            setSessions(voiceSessions);
-        } catch (e) {
-            console.error("Failed to load voice sessions", e);
-        }
-    }
-  }, []);
-
-  const saveSessionsToStorage = (updatedSessions: ChatSession[]) => {
-      const allSaved = localStorage.getItem('juriste_admin_sessions');
-      let otherSessions: ChatSession[] = [];
-      if (allSaved) {
-          const parsed = JSON.parse(allSaved);
-          otherSessions = parsed.filter((s: ChatSession) => s.mode !== ChatMode.VOICE);
-      }
-      const toSave = [...otherSessions, ...updatedSessions];
-      localStorage.setItem('juriste_admin_sessions', JSON.stringify(toSave));
-  };
-
-  const createNewVoiceSession = () => {
-      if (isConnected) stopSession();
-      const newId = Date.now().toString();
-      const newSession: ChatSession = {
-          id: newId,
-          title: `Session Vocale ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`,
-          messages: [],
-          transcripts: [],
-          lastModified: Date.now(),
-          mode: ChatMode.VOICE
-      };
-      setSessions(prev => [newSession, ...prev]);
-      setCurrentSessionId(newId);
-      setTranscriptionHistory([]);
-      saveSessionsToStorage([newSession, ...sessions]);
-      setShowHistory(false);
-  };
-
-  const loadVoiceSession = (session: ChatSession) => {
-      if (isConnected) stopSession();
-      setCurrentSessionId(session.id);
-      setTranscriptionHistory(session.transcripts || []);
-      setShowHistory(false);
-  };
-
-  const updateCurrentSession = (newTranscripts: {role: 'user' | 'model', text: string}[]) => {
-      if (!currentSessionId) return;
-      
-      setSessions(prevSessions => {
-          const updated = prevSessions.map(session => {
-              if (session.id === currentSessionId) {
-                  return {
-                      ...session,
-                      transcripts: newTranscripts,
-                      lastModified: Date.now()
-                  };
-              }
-              return session;
-          }).sort((a, b) => b.lastModified - a.lastModified);
-          
-          saveSessionsToStorage(updated);
-          return updated;
-      });
-  };
-
   const analyzeAudio = () => {
     if (!analyserRef.current) return;
 
@@ -117,11 +40,14 @@ const VoiceChat: React.FC = () => {
     const dataArray = new Uint8Array(bufferLength);
     analyserRef.current.getByteFrequencyData(dataArray);
 
+    // Calculate average volume
     let sum = 0;
     for (let i = 0; i < bufferLength; i++) {
       sum += dataArray[i];
     }
     const average = sum / bufferLength;
+    
+    // Normalize somewhat (0-100 range approx)
     const vol = Math.min(100, average * 2.5);
     setVolume(vol);
 
@@ -174,14 +100,10 @@ const VoiceChat: React.FC = () => {
   };
 
   const startSession = async () => {
-    // Create new session if none active
-    if (!currentSessionId) {
-        createNewVoiceSession();
-    }
-
     setError(null);
     setStatus('connecting');
-    
+    setTranscriptionHistory([]);
+
     if (!API_KEY) {
         setError("Clé API manquante (process.env.API_KEY).");
         setStatus('disconnected');
@@ -193,6 +115,7 @@ const VoiceChat: React.FC = () => {
       const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
       audioContextRef.current = new AudioContextClass({ sampleRate: 24000 });
       
+      // Browser policy: resume context if suspended
       if (audioContextRef.current.state === 'suspended') {
         await audioContextRef.current.resume();
       }
@@ -201,6 +124,7 @@ const VoiceChat: React.FC = () => {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
       
+      // Setup Analyser
       const analyser = inputContext.createAnalyser();
       analyser.fftSize = 256;
       analyserRef.current = analyser;
@@ -211,10 +135,12 @@ const VoiceChat: React.FC = () => {
       inputSourceRef.current = source;
       processorRef.current = processor;
 
+      // Connect graph: Source -> Analyser -> Processor -> Destination
       source.connect(analyser);
       source.connect(processor);
       processor.connect(inputContext.destination);
 
+      // Start visualizer loop
       analyzeAudio();
 
       const config = {
@@ -228,14 +154,16 @@ const VoiceChat: React.FC = () => {
         config: {
             responseModalities: [Modality.AUDIO],
             systemInstruction: config.systemInstruction,
-            outputAudioTranscription: {}, 
+            outputAudioTranscription: {}, // Corrected: Empty object to enable default transcription
         },
         callbacks: {
           onopen: () => {
             setIsConnected(true);
             setStatus('listening');
+            console.log("Gemini Live Session Opened");
           },
           onmessage: async (message: LiveServerMessage) => {
+            // Handle Transcription
             if (message.serverContent?.outputTranscription) {
                 const text = message.serverContent.outputTranscription.text;
                 transcriptionRef.current += text;
@@ -244,18 +172,13 @@ const VoiceChat: React.FC = () => {
             
             if (message.serverContent?.turnComplete) {
                  if (transcriptionRef.current) {
-                    const newEntry = { role: 'model', text: transcriptionRef.current };
-                    // @ts-ignore
-                    setTranscriptionHistory(prev => {
-                        const updated = [...prev, newEntry];
-                        updateCurrentSession(updated);
-                        return updated;
-                    });
+                    setTranscriptionHistory(prev => [...prev, { role: 'model', text: transcriptionRef.current }]);
                     transcriptionRef.current = '';
                     setCurrentTranscription('');
                  }
             }
 
+            // Handle Audio
             const base64Audio = message.serverContent?.modelTurn?.parts?.[0]?.inlineData?.data;
             
             if (base64Audio && audioContextRef.current) {
@@ -294,7 +217,7 @@ const VoiceChat: React.FC = () => {
                });
                scheduledSourcesRef.current = [];
                nextStartTimeRef.current = 0;
-               transcriptionRef.current = ''; 
+               transcriptionRef.current = ''; // Clear partial transcription on interrupt
                setCurrentTranscription('');
                setStatus('listening');
             }
@@ -329,6 +252,14 @@ const VoiceChat: React.FC = () => {
     }
   };
 
+  useEffect(() => {
+    return () => {
+      if (isConnected) {
+        stopSession();
+      }
+    };
+  }, [isConnected]);
+
   // Helper for Orb Color
   const getOrbColor = () => {
     switch(status) {
@@ -348,58 +279,8 @@ const VoiceChat: React.FC = () => {
       return baseScale + volumeScale;
   };
 
-  // --- RENDER ---
-
   return (
-    <div className="flex h-[600px] relative bg-[#0f172a] overflow-hidden rounded-b-3xl">
-      
-      {/* SIDEBAR (HISTORY) */}
-      <div 
-        className={`absolute inset-y-0 left-0 z-30 w-80 bg-slate-900/95 backdrop-blur shadow-xl transform transition-transform duration-300 ease-in-out ${showHistory ? 'translate-x-0' : '-translate-x-full'} flex flex-col border-r border-slate-800`}
-      >
-          <div className="p-4 border-b border-slate-800 flex items-center justify-between">
-              <h2 className="font-bold text-slate-200 flex items-center gap-2">
-                <svg className="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
-                Sessions Vocales
-              </h2>
-              <button onClick={() => setShowHistory(false)} className="p-1 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-              </button>
-          </div>
-          
-          <div className="p-4">
-              <button 
-                onClick={createNewVoiceSession}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-500 transition-all text-sm font-semibold shadow-lg active:scale-95"
-              >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
-                  Nouvelle session
-              </button>
-          </div>
-
-          <div className="flex-1 overflow-y-auto px-3 space-y-2 pb-4">
-              {sessions.map(session => (
-                  <div 
-                    key={session.id}
-                    className={`group flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all border border-transparent ${currentSessionId === session.id ? 'bg-indigo-900/50 text-indigo-100 border-indigo-500/30' : 'hover:bg-slate-800 text-slate-400 hover:border-slate-700'}`}
-                    onClick={() => loadVoiceSession(session)}
-                  >
-                      <div className={`p-2 rounded-lg flex-shrink-0 ${currentSessionId === session.id ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-800 text-slate-500'}`}>
-                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                          <div className="truncate text-sm font-medium">
-                              {session.title}
-                          </div>
-                          <div className="text-[10px] opacity-60 truncate mt-0.5">
-                              {new Date(session.lastModified).toLocaleDateString()} • {new Date(session.lastModified).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                          </div>
-                      </div>
-                  </div>
-              ))}
-          </div>
-      </div>
-
+    <div className="flex flex-col h-[600px] bg-[#0f172a] relative overflow-hidden transition-colors duration-700">
       {/* Animated Background */}
       <div className="absolute inset-0 z-0">
         <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full blur-[120px] opacity-20 transition-all duration-1000 ${
@@ -408,35 +289,28 @@ const VoiceChat: React.FC = () => {
       </div>
 
       {/* Content Container */}
-      <div className="flex-1 flex flex-col z-10 relative w-full">
+      <div className="flex-1 flex flex-col z-10 relative">
           
-          {/* Toggle Button */}
-          <div className="absolute top-4 left-4 z-20">
-            <button 
-                onClick={() => setShowHistory(!showHistory)}
-                className="p-2 bg-white/10 backdrop-blur rounded-lg border border-white/10 text-white/70 hover:bg-white/20 hover:text-white transition-all"
-                title="Historique"
-            >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-            </button>
-          </div>
-
           {/* Top Half: Orb & Status */}
           <div className="flex-1 flex flex-col items-center justify-center min-h-[300px]">
+            {/* Status Text */}
             <div className="mb-8 h-8">
                 <span className={`text-sm font-medium tracking-[0.2em] uppercase transition-all duration-300 ${
                     status === 'disconnected' ? 'text-slate-500' : 'text-white/90'
                 }`}>
-                    {status === 'disconnected' && 'PRÊT À COMMENCER'}
-                    {status === 'connecting' && 'CONNEXION...'}
-                    {status === 'listening' && 'JE VOUS ÉCOUTE'}
-                    {status === 'speaking' && 'JE RÉPONDS'}
+                    {status === 'disconnected' && 'Prêt à commencer'}
+                    {status === 'connecting' && 'Connexion...'}
+                    {status === 'listening' && 'Je vous écoute'}
+                    {status === 'speaking' && 'Je réponds'}
                 </span>
             </div>
 
+            {/* The ORB */}
             <div className="relative mb-8 group">
+                {/* Pulse Rings */}
                 <div className={`absolute inset-0 rounded-full transition-colors duration-500 ${status === 'listening' ? 'bg-indigo-500' : status === 'speaking' ? 'bg-emerald-400' : 'bg-transparent'} opacity-20 animate-ping ${status === 'disconnected' ? 'hidden' : ''}`}></div>
                 
+                {/* Core Orb */}
                 <div 
                     className={`w-24 h-24 rounded-full relative z-10 transition-all duration-200 ease-out flex items-center justify-center ${getOrbColor()} ${status === 'disconnected' ? 'opacity-50 grayscale' : 'scale-100'}`}
                     style={{ transform: `scale(${getScale()})` }}
@@ -465,7 +339,7 @@ const VoiceChat: React.FC = () => {
           </div>
 
           {/* Bottom Half: Live Transcriptions */}
-          {(isConnected || transcriptionHistory.length > 0) && (
+          {isConnected && (
              <div className="h-48 w-full bg-slate-900/50 backdrop-blur-sm border-t border-slate-800 p-4 overflow-y-auto scroll-smooth" ref={historyRef}>
                 <div className="space-y-3 max-w-2xl mx-auto">
                     {transcriptionHistory.map((item, i) => (
@@ -475,6 +349,7 @@ const VoiceChat: React.FC = () => {
                              </div>
                         </div>
                     ))}
+                    {/* Current Real-time stream */}
                     {currentTranscription && (
                         <div className="flex justify-start">
                             <div className="max-w-[80%] rounded-xl px-3 py-2 text-sm bg-emerald-900/40 text-emerald-100 border border-emerald-500/30 animate-pulse">
@@ -493,14 +368,15 @@ const VoiceChat: React.FC = () => {
             </div>
       )}
 
-      {/* Controls - CENTERED BUTTONS without arrow */}
+      {/* Controls */}
       <div className="p-6 z-20 flex justify-center items-center bg-slate-900 border-t border-slate-800">
         {!isConnected ? (
           <button
             onClick={startSession}
             className="group relative inline-flex items-center justify-center px-8 py-3 font-semibold text-white transition-all duration-300 bg-indigo-600 rounded-xl hover:bg-indigo-500 hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(99,102,241,0.4)] focus:outline-none"
           >
-            <span className="text-lg tracking-wide">Démarrer la conversation</span>
+            <span className="mr-3 text-lg tracking-wide">Démarrer la conversation</span>
+            <svg className="w-5 h-5 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
           </button>
         ) : (
           <button
