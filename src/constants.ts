@@ -643,7 +643,7 @@ Les « discriminations positives » sont également interdites lors du recruteme
 « [Le] principe de l'égal accès des citoyens aux emplois publics, proclamé par l'article 6 précité de la Déclaration de 1789, impose que, dans les nominations de fonctionnaires [ou d’agents publics en général], il ne soit tenu compte que de la capacité, des vertus et des talents […] » - Décision n° 82-153 DC du 14 janvier 1983, Loi relative au statut général des fonctionnaires.
  Le Conseil d’État suit exactement la même ligne jurisprudentielle que le Conseil constitutionnel : seule la capacité des candidats peut constituer un critère de sélection à l’entrée dans la fonction publique, à l’exclusion de tous autres critères. 
 Aussi, la Haute juridiction administrative censure-t-elle, pour l’accès aux emplois publics, tout système de sélection utilisant des considérations d’ordre social, familial, géographique ou autre, qui sont étrangères à la capacité des candidats et donc contraire aux exigences de l’article 6 de la Déclaration de 1789 : Conseil d’État, 14 février 1990, Fédération syndicaliste FO de la Défense.    
-***/***
+***
 --- DOCUMENT 2: LA POLICE ADMINISTRATIVE ---
 SECTION II
 LA FONCTION NORMATIVE : LA POLICE ADMINISTRATIVE
@@ -676,9 +676,6 @@ Rappelons que, selon Charles Eisenmann, l'administration remplit deux fonctions 
 *
 
 
-
-
-
 Premièrement, contrairement à la plupart des autres services publics, le service public de la police ne peut être délégué purement et simplement à une personne privée – Conseil d’État, assemblée, 17 juin 1932, Ville de Castelnaudary.  
 * Exemple 1 : Conseil d’État, section, 23 mai 1958, Consorts Amoudruz, Rec. p. 301. Une commune a concédé à une personne privée l’exploitation d’une plage publique ; mais, selon le juge, cette commune reste responsable de la sécurité des baigneurs (mission de police administrative).
 Deuxièmement, l’administration ne peut, en principe, exiger des bénéficiaires du service public de la police le paiement d’une redevance. Motif : le service public de la police est financé par l’impôt ; il s’ensuit qu’il est en principe gratuit pour l’usager.
@@ -694,8 +691,6 @@ Deuxièmement, l’administration ne peut, en principe, exiger des bénéficiair
 A – La définition téléologique de la police administrative	10
 B – La distinction police administrative – police judiciaire	17
 
-	
-	*
       A – La définition téléologique de la police administrative
  Voici la définition retenue dans ce cours : 
 
@@ -1157,7 +1152,7 @@ L’état d’urgence sanitaire, c’est un régime exceptionnel de police décl
 e – Le plan gouvernemental d'alerte et de prévention « Vigipirate »
 Définition du plan Vigipirate :
 Le plan Vigipirate est un dispositif d’alerte et de prévention qui vise à assurer la protection de la population et des sites sensibles dans un contexte de menace terroriste effective ou imminente.     
-***/***
+***
 
 --- DOCUMENT 3: LES ACTES ADMINISTRATIFS UNILATÉRAUX ---
 SECTION I
@@ -1650,7 +1645,7 @@ Question : Importe-t-il de souligner la différence entre les deux affirmations 
 1. Votre recours est irrecevable. Dans ce cas, moi, juge, je ne me poserai pas la seconde question, la procédure est terminée et vous êtes débouté ;
 2. Votre recours est recevable. Moi, juge, je suis alors en droit de me poser la seconde question, celle du bien-fondé de votre recours : est-ce que l’acte X est illégal et doit être annulé comme vous l’affirmez 
  La seconde question, celle du bien-fondé du recours, correspond à la question de la légalité de l’acte X ; elle diffère, on l’a vu, de la question de la recevabilité du recours.    
-***/***
+***
 
 --- DOCUMENT 4: LES ACTES CONTRATS ADMINISTRATIFS ---
 SECTION II
@@ -1686,8 +1681,6 @@ Définition : L’équation financière, c’est la théorie permettant l’inde
 Définition : Le fait du prince, c’est la théorie permettant l’indemnisation du cocontractant lorsque l'administration contractante, bien qu’elle n’agisse pas en tant que partie au contrat, modifie unilatéralement et indirectement les modalités d'exécution du contrat ou les prestations du cocontractant. 
 
 Définition : L’imprévision, c’est la théorie permettant d’obliger l'administration contractante à aider financièrement son cocontractant lorsqu'un événement imprévisible, (donc anormal) et indépendant de la volonté des parties bouleverse l'économie du contrat. 
-
-
 
 
 **  
@@ -1728,8 +1721,6 @@ Actuellement, le principe est repris à l’article L. 3331-1 du code général 
 Ces contrats ne sont jamais qualifiés de contrats administratifs même s'ils satisfont aux critères jurisprudentiels permettant de qualifier un contrat de contrat administratif – Conseil d’État, Section, 13 octobre 1961, Établissements Campanon-Rey ; Tribunal des Conflits, 17 décembre 1962, Dame Bertrand.
 **
 
-
-*
         B – Les contrats administratifs par application des critères jurisprudentiels
 	
 1 – Le critère organique : au moins, une personne publique partie au contrat
@@ -1830,8 +1821,7 @@ Ces contrats ne sont jamais des contrats administratifs même s'ils renferment d
 Clause = disposition d'un contrat ; 
 Exorbitante = ex orbita, hors de la voie tracée, hors du droit commun.
 
-
-
+Définition : Une Clause exorbitante est une clause qui, notamment par les prérogatives qu’elle reconnaît à la personne publique contractante dans l’exécution du contrat, implique, dans l’intérêt général, que le contrat relève du régime exorbitant des contrats administratifs. Définition (un peu tautologique) due à la décision Tribunal des conflits, 13 octobre 2014, SA Axa France IARD contre MAIF.
 
 * Exemples de clauses exorbitantes du droit commun :
 * la clause qui donne à l’administration la faculté de prononcer la résiliation unilatérale du contrat en l’absence de tout manquement du cocontractant à ses obligations contractuelles ;
@@ -1881,31 +1871,6 @@ Les critères définis par la jurisprudence (Cf. I – B) : Sous réserve d’ex
  Toutefois, certains contrats ne sont jamais considérés comme des contrats administratifs même s'ils satisfont à tous les critères définis par la jurisprudence. Exemple : le contrat conclu entre un service public industriel et commercial et l'un de ses usagers en vue de fournir à ce dernier des prestations de service.
 **
 
-*
- EXAMENS SEMESTRE I : Définitions et arrêts à retenir
-       
-
-Définition
-Page
-Clause exorbitante du droit commun
-Page 18
-*
-Arrêts
-Pages
-Tribunal des conflits, 21 mars 1983, Union des Assurances de Paris
-Page 17
-Conseil d’État, 21 mars 2007, Commune de Boulogne-Billancourt c. Société Mayday Sécurité
-p. 16
-Conseil d’État, 31 juillet 1912, Société des granits porphyroïdes des Vosges
-p. 17
-Tribunal des conflits, 13 octobre 2014, SA Axa France IARD contre MAIF
-p.Erreur ! Signet non défini.
-Conseil d’État, Section, 19 janvier 1973, Société d'Exploitation Électrique de la rivière du Sant
-p. 18
-Conseil d’État, Section, 20 avril 1956, Époux Bertin
-p. 19
-
-*
          II – La conclusion des contrats administratifs 
 
 
@@ -1921,8 +1886,6 @@ p. 19
  « Un marché est un contrat conclu par un ou plusieurs acheteurs soumis au présent code avec un ou plusieurs opérateurs économiques, pour répondre à leurs besoins en matière de travaux, de fournitures ou de services, en contrepartie d'un prix ou de tout équivalent. »
 
       
-*
-
 **
 2 – La typologie des contrats de concession 
 Rappel des définitions données dans le cours sur le service public :
@@ -1969,7 +1932,6 @@ Code la commande publique, article L1111-4
       Un marché public relevant d'une des trois catégories mentionnées ci-dessus (travaux, fournitures et services) peut comporter, à titre accessoire, des éléments relevant d'une autre catégorie. C’est ce que l’on appelle parfois un marché mixte.
 **
 
-*
       B – Les modes de conclusion
 
 1 – La conclusion des marchés publics
@@ -2000,44 +1962,7 @@ i – Les seuils de la publicité
 * du montant estimé du marché, 
 * de l’objet du marché (travaux, fournitures ou services)
 * et de l’identité de la personne publique (pour l’essentiel, État ou collectivité territoriale).
-Ces réponses sont exposées dans le tableau ci-dessous.
- Marchés : objet et acheteurs
- Publicité : modalités applicables en fonction de l’objet et 
-du montant H.T. du marché 
 
-Pas d’obligation de publicité
-Publicité adaptée (libre choix de l’acheteur public)
-Publicité encadrée :
-BOAMP ou Shal 
-Publicité encadrée :
-BOAMP + JOUE 
-Marché de travaux (pour tout type d'acheteur public)
-moins 
-de 40 000 €
-entre 40 000 € et 99 999 €
-entre 100 000 € et 5 537 999 €
-à partir de 
-5 538 000 €
-Marché de fourniture et de services pour l'État et les EPA nationaux
-moins 
-de 40 000 €
-entre 40 000 € et 89 999 €
-entre 90 000 € et 142 999 €
-à partir de 
-143 000 €
-Marché de fourniture et de services pour les collectivités territoriales et leurs établissements
-moins 
-de 40 000 €
-entre 40 000 € et 89 999 €
-entre 90 000 € et 220 999 €
-à partir de 
-221 000 €
-
-
-Légende :
-BOAMP : Bulletin officiel des annonces des marchés publics
-Shal : Support habilité à recevoir des annonces légales
-JOUE : Journal officiel de l’Union européenne
 ii – Les seuils des procédures
 La personne publique désireuse de conclure un marché public est-elle tenue au respect d’une certaine procédure ?  Si oui, quelles formes cette publicité doit-elle revêtir ? 
 Les réponses à ces deux questions varient en fonction
@@ -2086,7 +2011,7 @@ Code général des collectivités territoriales - Article L1411-1
  Actuellement, les contrats de délégation de service public sont régis
 1. par les règles et principes communs aux contrats de concession et qui résultent, pour l’essentiel, du code de la commande publique,
 2. et par les règles spécifiques des articles L.1411-1 à L.1411-19 du code général des collectivités territoriales.
-*
+
 a – Les principes
  Les trois principes régissant la conclusion des contrats de concession (dont font partie, rappelons-le, les contrats de délégation de service public) sont énoncés à l’article L3 du code de la commande publique :
 « Les acheteurs et les autorités concédantes respectent le principe d'égalité de traitement des candidats à l'attribution d'un contrat de la commande publique. Ils mettent en œuvre les principes de liberté d'accès et de transparence des procédures, dans les conditions définies dans le présent code.
@@ -2641,7 +2566,7 @@ On en sait les caractères en droit public :
 * et rendant absolument impossible l'exécution du contrat (irrésistibilité dans ses effets ; il ne s’agit pas d’une simple difficulté d’exécution). 
  Rappelons que le déficit permanent et définitif consécutif à une situation d’imprévision est assimilé à un cas de force majeure.
  La force majeure permet au cocontractant de demander au juge la résiliation du contrat. Les effets de la force majeure sont limités à la durée de l’événement.  
-***/***
+***
     
 `;
 
