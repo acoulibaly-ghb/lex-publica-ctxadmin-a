@@ -427,10 +427,10 @@ const VoiceChat: React.FC = () => {
                 <span className={`text-sm font-medium tracking-[0.2em] uppercase transition-all duration-300 ${
                     status === 'disconnected' ? 'text-slate-500' : 'text-white/90'
                 }`}>
-                    {status === 'disconnected' && 'Prêt à commencer'}
-                    {status === 'connecting' && 'Connexion...'}
-                    {status === 'listening' && 'Je vous écoute'}
-                    {status === 'speaking' && 'Je réponds'}
+                    {status === 'disconnected' && 'PRÊT À COMMENCER'}
+                    {status === 'connecting' && 'CONNEXION...'}
+                    {status === 'listening' && 'JE VOUS ÉCOUTE'}
+                    {status === 'speaking' && 'JE RÉPONDS'}
                 </span>
             </div>
 
@@ -493,15 +493,14 @@ const VoiceChat: React.FC = () => {
             </div>
       )}
 
-      {/* Controls */}
+      {/* Controls - CENTERED BUTTONS without arrow */}
       <div className="p-6 z-20 flex justify-center items-center bg-slate-900 border-t border-slate-800">
         {!isConnected ? (
           <button
             onClick={startSession}
             className="group relative inline-flex items-center justify-center px-8 py-3 font-semibold text-white transition-all duration-300 bg-indigo-600 rounded-xl hover:bg-indigo-500 hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(99,102,241,0.4)] focus:outline-none"
           >
-            <span className="mr-3 text-lg tracking-wide">Démarrer la conversation</span>
-            <svg className="w-5 h-5 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+            <span className="text-lg tracking-wide">Démarrer la conversation</span>
           </button>
         ) : (
           <button
