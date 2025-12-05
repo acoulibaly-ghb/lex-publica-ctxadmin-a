@@ -127,7 +127,7 @@ const TextChat: React.FC = () => {
   const isProcessingQueueRef = useRef(false);
 
   // Use process.env.API_KEY strictly
-  const API_KEY = process.env.API_KEY;
+  const API_KEY = import.meta.env.VITE_API_KEY;
 
   const DEFAULT_WELCOME_MESSAGE: Message = { 
     role: 'model', 
