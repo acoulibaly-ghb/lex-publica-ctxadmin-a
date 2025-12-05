@@ -607,7 +607,7 @@ Historique
     </div>
     
     {/* Glossary Button */}
-    <div className="absolute top-4 right-4 z-10">
+    <div className="absolute top-4 right-4 z-20">
         <button onClick={() => setShowGlossary(true)} className="flex items-center gap-2 px-3 py-2 bg-white/90 backdrop-blur shadow-sm border border-indigo-100 rounded-lg text-indigo-600 hover:bg-indigo-50 transition-all text-sm font-semibold">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
             Glossaire
@@ -643,15 +643,15 @@ Historique
                             </div>
                             
                             {/* TTS Button ONLY for Model & Not Loading */}
-                            {msg.role === 'model' && !isLoading && idx === messages.length - 1 && (
-                                <button 
-                                    onClick={() => handlePlayMessage(msg.text, idx)}
-                                    className={`p-1.5 rounded-full transition-all ml-2 ${playingMessageId === idx ? 'bg-indigo-100 text-indigo-600 animate-pulse ring-2 ring-indigo-200' : 'hover:bg-slate-100 text-slate-400 hover:text-indigo-600'}`}
-                                    title="Lire à haute voix"
-                                >
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path></svg>
-                                </button>
-                            )}
+                            {msg.role === 'model' && !isLoading && ( {/* ⬅️ Retirer : && idx === messages.length - 1 */}
+                             <button 
+                             onClick={() => handlePlayMessage(msg.text, idx)}
+                             className={`p-1.5 rounded-full transition-all ml-2 ${playingMessageId === idx ? 'bg-indigo-100 text-indigo-600 animate-pulse ring-2 ring-indigo-200' : 'hover:bg-slate-100 text-slate-400 hover:text-indigo-600'}`}
+                             title="Lire à haute voix"
+                                     >
+                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path></svg>
+                             </button>
+                             )}
                         </div>
                     </>
                 )}
