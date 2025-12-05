@@ -34,7 +34,7 @@ const VoiceChat: React.FC = () => {
   const historyRef = useRef<HTMLDivElement>(null);
 
   // Use process.env.API_KEY strictly
-  const API_KEY = process.env.API_KEY;
+  const API_KEY = import.meta.env.VITE_API_KEY;
 
   // --- HISTORY LOGIC ---
   useEffect(() => {
