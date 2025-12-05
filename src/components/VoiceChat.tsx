@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { GoogleGenAI, LiveServerMessage, Modality } from '@google/genai';
 import { SYSTEM_INSTRUCTION } from '../constants';
@@ -211,7 +212,7 @@ const VoiceChat: React.FC = () => {
             }
             if (message.serverContent?.turnComplete) {
                  if (transcriptionRef.current) {
-                    const newEntry = { role: 'model', text: transcriptionRef.current };
+                    const newEntry: { role: 'user' | 'model'; text: string } = { role: 'model', text: transcriptionRef.current };
                     // @ts-ignore
                     setTranscriptionHistory(prev => {
                         const updated = [...prev, newEntry];
