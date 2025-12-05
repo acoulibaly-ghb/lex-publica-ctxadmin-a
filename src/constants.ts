@@ -2611,3 +2611,77 @@ Si un étudiant pose une question floue, demande-lui de préciser (ex: "Parles-t
 ${KNOWLEDGE_BASE}
 --- FIN KNOWLEDGE BASE ---
 `;
+export const GLOSSARY_DATA = [
+  {
+    term: "Cour Internationale de Justice (CIJ)",
+    definition: "Organe judiciaire principal des Nations Unies, établi en 1945. Siège à La Haye, aux Pays-Bas. Règle les différends juridiques entre États et donne des avis consultatifs."
+  },
+  {
+    term: "Différend",
+    definition: "Désaccord sur un point de droit ou de fait, une contradiction, une opposition de thèses juridiques ou d'intérêts entre deux personnes (Affaire Mavrommatis, 1924)."
+  },
+  {
+    term: "Avis consultatif",
+    definition: "Opinion juridique donnée par la CIJ sur une question de droit, à la demande d'un organe ou institution de l'ONU. N'a pas force obligatoire, contrairement aux arrêts."
+  },
+  {
+    term: "Arrêt",
+    definition: "Décision judiciaire rendue par la CIJ dans le cadre de sa fonction contentieuse. A force obligatoire pour les parties au différend (Article 59 du Statut)."
+  },
+  {
+    term: "Compétence contentieuse",
+    definition: "Fonction de la CIJ qui consiste à trancher des différends juridiques entre États. Nécessite le consentement des parties."
+  },
+  {
+    term: "Fonction consultative",
+    definition: "Fonction de la CIJ qui consiste à donner des avis juridiques sur des questions posées par des organes autorisés de l'ONU."
+  },
+  {
+    term: "Juge ad hoc",
+    definition: "Juge désigné temporairement par une partie à un différend devant la CIJ lorsqu'elle n'a pas de juge de sa nationalité siégeant à la Cour."
+  },
+  {
+    term: "Exception préliminaire",
+    definition: "Moyen soulevé avant l'examen du fond pour contester la compétence de la Cour ou la recevabilité de la requête."
+  },
+  {
+    term: "Mesures conservatoires",
+    definition: "Mesures provisoires ordonnées par la CIJ pour préserver les droits des parties en attendant la décision finale (Article 41 du Statut)."
+  },
+  {
+    term: "Clause compromissoire",
+    definition: "Disposition d'un traité par laquelle les parties acceptent à l'avance de soumettre leurs différends à la CIJ."
+  },
+  {
+    term: "Responsabilité internationale de l'État",
+    definition: "Obligation pour un État de réparer le préjudice causé par un fait internationalement illicite qui lui est attribuable."
+  },
+  {
+    term: "Affaire Mavrommatis (1924)",
+    definition: "Premier arrêt de la CPJI définissant la notion de différend international : 'un désaccord sur un point de droit ou de fait'."
+  },
+  {
+    term: "Convention de Vienne (1963)",
+    definition: "Convention sur les relations consulaires. Définit les droits et devoirs des postes consulaires, notamment le droit de notification consulaire."
+  },
+  {
+    term: "Restitutio in integrum",
+    definition: "Forme de réparation consistant à rétablir la situation qui existait avant le fait illicite."
+  },
+  {
+    term: "Statut de la CIJ",
+    definition: "Texte fondamental annexé à la Charte des Nations Unies qui définit l'organisation, la compétence et le fonctionnement de la Cour Internationale de Justice."
+  },
+  {
+    term: "Agent",
+    definition: "Représentant officiel d'un État devant la CIJ. Désigné par le gouvernement pour conduire la procédure."
+  },
+  {
+    term: "Protocole facultatif",
+    definition: "Accord additionnel à un traité permettant aux États d'accepter des obligations supplémentaires, notamment la compétence obligatoire de la CIJ."
+  },
+  {
+    term: "Réserve ratione temporis",
+    definition: "Réserve qui limite la compétence de la Cour aux différends survenus après une date déterminée."
+  }
+];
