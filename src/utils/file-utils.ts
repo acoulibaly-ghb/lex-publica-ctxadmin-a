@@ -1,4 +1,4 @@
-import jsPDF from 'jspdf';
+import { jsPDF } from "jspdf";
 
 export const fileToBase64 = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
@@ -6,6 +6,7 @@ export const fileToBase64 = (file: File): Promise<string> => {
     reader.readAsDataURL(file);
     reader.onload = () => {
       if (typeof reader.result === 'string') {
+        // Remove the "data:*/*;base64," prefix
         const base64 = reader.result.split(',')[1];
         resolve(base64);
       } else {
@@ -17,55 +18,71 @@ export const fileToBase64 = (file: File): Promise<string> => {
 };
 
 export const exportSessionToPDF = (title: string, messages: { role: string, text: string, timestamp?: Date }[]) => {
+    // Utilisation de l'import nommé pour éviter les erreurs de constructeur
     const doc = new jsPDF();
+    
     const pageWidth = doc.internal.pageSize.getWidth();
     const margin = 20;
     const maxLineWidth = pageWidth - (margin * 2);
     let y = 20;
 
-    // Title
+    // Configuration de la police pour supporter les accents basiques
+    doc.setFont("helvetica", "bold");
+    
+    // Titre
     doc.setFontSize(18);
     doc.setTextColor(79, 70, 229); // Indigo
-    doc.text(title, margin, y);
+    // Nettoyage basique du titre pour éviter les caractères non supportés
+    const cleanTitle = title.replace(/[^\x20-\x7EÀ-ÿ]/g, "");
+    doc.text(cleanTitle, margin, y);
     y += 10;
 
     // Date
     doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
     doc.setTextColor(100);
-    doc.text(`Exporté le ${new Date().toLocaleDateString()} à ${new Date().toLocaleTimeString()}`, margin, y);
+    const dateStr = `Exporté le ${new Date().toLocaleDateString()}`;
+    doc.text(dateStr, margin, y);
     y += 15;
 
-    // Content
+    // Contenu
     messages.forEach((msg) => {
-        // Check page break
+        // Vérification saut de page
         if (y > 270) {
             doc.addPage();
             y = 20;
         }
 
-        // Role Header
+        // En-tête du message (Rôle)
         doc.setFontSize(11);
         doc.setFont("helvetica", "bold");
         if (msg.role === 'user') {
-            doc.setTextColor(30, 64, 175); // Blue for user
+            doc.setTextColor(30, 64, 175); // Bleu pour l'utilisateur
             doc.text("Vous :", margin, y);
         } else {
-            doc.setTextColor(16, 185, 129); // Emerald for AI
+            doc.setTextColor(16, 185, 129); // Émeraude pour l'IA
             doc.text("ADA (Assistant) :", margin, y);
         }
         y += 7;
 
-        // Message Body
+        // Corps du message
         doc.setFontSize(10);
         doc.setFont("helvetica", "normal");
         doc.setTextColor(0);
 
-        // Clean text (remove markdown basics for PDF readability)
-        const cleanText = msg.text.replace(/\*\*/g, '').replace(/###/g, '').replace(/-/g, '•');
-        
+        // Nettoyage du texte pour le PDF (retrait du markdown et caractères spéciaux problématiques)
+        let cleanText = msg.text || "";
+        cleanText = cleanText
+            .replace(/\*\*/g, '') // Gras
+            .replace(/###/g, '')  // Titres
+            .replace(/##/g, '')
+            .replace(/-/g, '•'); // Puces
+
+        // Découpage du texte pour tenir dans la largeur
         const splitText = doc.splitTextToSize(cleanText, maxLineWidth);
         doc.text(splitText, margin, y);
         
+        // Calcul de la nouvelle position Y
         y += (splitText.length * 5) + 10;
     });
 
