@@ -135,9 +135,9 @@ const TextChat: React.FC = () => {
   };
 
   const suggestions = [
-    "La compétence de la Cour est-elle révocable ?",
-    "Conditions et licéité des contre-mesures ?",
-    "Comparer les arrêts et les avis de la Cour"
+    "Le Conseil d’État : juge ou conseiller ?",
+    "Signification de la règle de la décision préalable ?",
+    "Qu’est-ce qu’une cause juridique ?"
   ];
 
   // --- HISTORY MANAGEMENT ---
