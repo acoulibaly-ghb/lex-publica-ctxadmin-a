@@ -130,7 +130,7 @@ const TextChat: React.FC = () => {
 
   const DEFAULT_WELCOME_MESSAGE: Message = { 
     role: 'model', 
-    text: '### Bonjour !\n\nJe suis **Ada**, votre assistante juridique spécialisée en Contentieux International.\n\nJe peux vous aider sur les thèmes suivants :\n- **Voies de recours**\n- **Délai de recours**\n- **Juge des référés et juge du fond**\n\nQuelle est votre question ?', 
+    text: '### Bonjour !\n\nJe suis **Ada**, votre assistante juridique spécialisée en Contentieux administratif.\n\nJe peux vous aider sur les thèmes suivants :\n- **Voies de recours**\n- **Délai de recours**\n- **Juge des référés et juge du fond**\n\nQuelle est votre question ?', 
     timestamp: new Date() 
   };
 
