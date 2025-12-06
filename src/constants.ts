@@ -126,24 +126,24 @@ Organe : Arbitre unique ou Tribunal arbitral (souvent 3 ou 5 membres).
 Sentence : Obligatoire, définitive, fondée sur le droit (ou l'équité si les parties le demandent).
 
 --- JURISPRUDENCE MAJEURE ---
-- CPJI, 1924, Mavrommatis : Définition différend / Protection diplomatique.
-- CPJI, 1927, Usine de Chorzów : Principe de réparation intégrale.
-- CIJ, 1949, Détroit de Corfou : Preuve indirecte.
-- CIJ, 1949, Réparation des dommages (Bernadotte) : Personnalité juridique de l'ONU.
-- CIJ, 1955, Nottebohm : Nationalité effective.
-- CIJ, 1970, Barcelona Traction : Protection diplomatique des sociétés (État du siège) / Obligations erga omnes.
-- CIJ, 1980, Téhéran : Imputabilité (approbation par l'État d'actes privés).
-- CIJ, 1986, Nicaragua : Légitime défense / Contrôle effectif.
-- CIJ, 1997, Gabcikovo-Nagymaros : Contre-mesures / État de nécessité.
-- CIJ, 2001, LaGrand : Force obligatoire des mesures conservatoires.
-- CIJ, 2004, Avena : Réparation adéquate.
-- CIJ, 2007, Diallo : Protection diplomatique (droits de l'associé vs société).
-- CIJ, 2010, Pâte à papier : Restitution vs Indemnisation.
-- CIJ, 2012, Allemagne c. Italie : Immunités juridictionnelles.
-- CIJ, 2018, Costa Rica c. Nicaragua : Indemnisation dommages environnementaux.
+- CPJI, 1924, Mavrommatis
+- CPJI, 1927, Usine de Chorzów
+- CIJ, 1949, Détroit de Corfou
+- CIJ, 1949, Réparation des dommages (Bernadotte)
+- CIJ, 1955, Nottebohm
+- CIJ, 1970, Barcelona Traction
+- CIJ, 1980, Téhéran
+- CIJ, 1986, Nicaragua
+- CIJ, 1997, Gabcikovo-Nagymaros
+- CIJ, 2001, LaGrand
+- CIJ, 2004, Avena
+- CIJ, 2007, Diallo
+- CIJ, 2010, Pâte à papier
+- CIJ, 2012, Allemagne c. Italie
+- CIJ, 2018, Costa Rica c. Nicaragua
 
 --- LISTE DES QUESTIONS D'EXAMEN (TOTAL 45 QUESTIONS) ---
-(Inclut les 31 questions des chapitres 1 & 2 précédentes, plus les suivantes du Chapitre 3)
+(Liste complète des 45 questions issues des documents)
 32. Terme le plus large ? (Fait ou comportement).
 33. Fait du maire imputable à l'État ? (Oui, c'est un organe de l'État).
 34. Maire peut engager l'État ? (Non, pas de compétence internationale, sauf si le droit interne le dit).
@@ -160,25 +160,9 @@ Sentence : Obligatoire, définitive, fondée sur le droit (ou l'équité si les 
 45. Ordre priorité réparation ? (Restitution > Indemnisation > Satisfaction).
 `;
 
-export const GLOSSARY_DATA = [
-    { term: "Différend", definition: "Désaccord sur un point de droit ou de fait, une contradiction, une opposition de thèses juridiques ou d'intérêts entre deux personnes (Arrêt Mavrommatis)." },
-    { term: "Compromis", definition: "Accord spécial conclu entre États APRÈS la naissance d'un différend pour soumettre celui-ci à la Cour." },
-    { term: "Clause compromissoire", definition: "Disposition incluse dans un traité prévoyant la compétence obligatoire de la Cour pour les différends futurs relatifs à ce traité." },
-    { term: "Forum Prorogatum", definition: "Acceptation tacite ou informelle de la compétence de la Cour par un État défendeur après qu'une requête a été déposée contre lui." },
-    { term: "Mesures conservatoires", definition: "Mesures provisoires ordonnées par la Cour pour sauvegarder les droits des parties en cas d'urgence et de risque de préjudice irréparable, avant l'arrêt final." },
-    { term: "Exception préliminaire", definition: "Moyen de procédure soulevé par une partie pour contester la compétence de la Cour ou la recevabilité de la requête, empêchant l'examen au fond." },
-    { term: "Protection diplomatique", definition: "Droit d'un État d'agir en faveur de ses nationaux lésés par des actes contraires au droit international commis par un autre État." },
-    { term: "Juge ad hoc", definition: "Juge désigné spécialement par une partie au litige si elle ne compte pas de juge de sa nationalité sur le siège." },
-    { term: "Obligation erga omnes", definition: "Obligation due à la communauté internationale dans son ensemble, que tous les États ont un intérêt juridique à voir respectée." },
-    { term: "Restitutio in integrum", definition: "Remise en état initial. Forme première de la réparation qui consiste à rétablir la situation qui existait avant le fait illicite." },
-    { term: "Satisfaction", definition: "Forme de réparation du préjudice moral (excuses, constatation de la violation, etc.) qui intervient lorsque la restitution et l'indemnisation ne suffisent pas." },
-    { term: "Contre-mesure", definition: "Acte illicite en soi, mais justifié car pris en riposte à un fait illicite antérieur d'un autre État (ex: représailles non armées)." },
-    { term: "État de nécessité", definition: "Circonstance excluant l'illicéité lorsqu'un acte est le seul moyen pour l'État de protéger un intérêt essentiel contre un péril grave et imminent." }
-];
-
 export const SYSTEM_INSTRUCTION = `
 CONTEXTE ET RÔLE :
-Tu es **ADA**, l'assistante pédagogique virtuelle experte en Droit du Contentieux International.
+Tu es **ADA**, l'assistante pédagogique virtuelle experte en Droit du Contentieux International du Professeur Coulibaly.
 
 RÈGLES ABSOLUES :
 1. IDENTITÉ : Si on te demande ton nom, tu es ADA.
