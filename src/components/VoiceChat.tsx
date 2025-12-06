@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { GoogleGenAI, LiveServerMessage, Modality } from '@google/genai';
 import { SYSTEM_INSTRUCTION } from '../constants';
 import { createPcmBlob, decodeAudioData } from '../utils/audio-utils';
+import { exportSessionToPDF } from '../utils/file-utils';
 import Visualizer from './Visualizer';
 
 const VoiceChat: React.FC = () => {
@@ -11,7 +12,9 @@ const VoiceChat: React.FC = () => {
   const [volume, setVolume] = useState(0);
   const [currentTranscription, setCurrentTranscription] = useState('');
   
-  // Refs
+  // On stocke juste l'historique de la session courante pour l'affichage et l'export
+  const [sessionTranscripts, setSessionTranscripts] = useState<{role: 'user' | 'model', text: string}[]>([]);
+
   const audioContextRef = useRef<AudioContext | null>(null);
   const inputSourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const processorRef = useRef<ScriptProcessorNode | null>(null);
@@ -21,8 +24,9 @@ const VoiceChat: React.FC = () => {
   const nextStartTimeRef = useRef<number>(0);
   const scheduledSourcesRef = useRef<AudioBufferSourceNode[]>([]);
   const sessionPromiseRef = useRef<Promise<any> | null>(null);
+  const transcriptionRef = useRef('');
+  const historyRef = useRef<HTMLDivElement>(null);
 
-  // Use import.meta.env for Vite compatibility
   const API_KEY = import.meta.env.VITE_API_KEY;
 
   const analyzeAudio = () => {
@@ -59,11 +63,15 @@ const VoiceChat: React.FC = () => {
   };
 
   const startSession = async () => {
+    // Reset session history on new start
+    setSessionTranscripts([]);
+    transcriptionRef.current = '';
+    
     setError(null);
     setStatus('connecting');
     
     if (!API_KEY) {
-        setError("Clé API manquante (VITE_API_KEY).");
+        setError("Clé API manquante.");
         setStatus('disconnected');
         return;
     }
@@ -117,10 +125,17 @@ const VoiceChat: React.FC = () => {
           },
           onmessage: async (message: LiveServerMessage) => {
             if (message.serverContent?.outputTranscription) {
-                setCurrentTranscription(message.serverContent.outputTranscription.text);
+                const text = message.serverContent.outputTranscription.text;
+                transcriptionRef.current += text;
+                setCurrentTranscription(transcriptionRef.current);
             }
             if (message.serverContent?.turnComplete) {
-                setCurrentTranscription('');
+                 if (transcriptionRef.current) {
+                    const newEntry: {role: 'user' | 'model', text: string} = { role: 'model', text: transcriptionRef.current };
+                    setSessionTranscripts(prev => [...prev, newEntry]);
+                    transcriptionRef.current = '';
+                    setCurrentTranscription('');
+                 }
             }
 
             const base64Audio = message.serverContent?.modelTurn?.parts?.[0]?.inlineData?.data;
@@ -132,14 +147,11 @@ const VoiceChat: React.FC = () => {
                 const source = audioContextRef.current.createBufferSource();
                 source.buffer = audioBuffer;
                 source.connect(audioContextRef.current.destination);
-                
                 const currentTime = audioContextRef.current.currentTime;
                 const startTime = Math.max(currentTime, nextStartTimeRef.current);
                 source.start(startTime);
-                
                 nextStartTimeRef.current = startTime + audioBuffer.duration;
                 scheduledSourcesRef.current.push(source);
-                
                 source.onended = () => {
                    const index = scheduledSourcesRef.current.indexOf(source);
                    if (index > -1) {
@@ -201,6 +213,12 @@ const VoiceChat: React.FC = () => {
       }
     };
   }, [isConnected]);
+  
+  useEffect(() => {
+      if (historyRef.current) {
+          historyRef.current.scrollTop = historyRef.current.scrollHeight;
+      }
+  }, [sessionTranscripts, currentTranscription]);
 
   // UI Helpers
   const getOrbColor = () => {
@@ -218,6 +236,10 @@ const VoiceChat: React.FC = () => {
       const volumeScale = Math.max(0, volume / 150); 
       return baseScale + volumeScale;
   };
+  
+  const handleExport = () => {
+      exportSessionToPDF(`Session Vocale ${new Date().toLocaleTimeString()}`, sessionTranscripts.map(t => ({...t, timestamp: new Date()})));
+  };
 
   return (
     <div className="flex flex-col h-[600px] bg-[#0f172a] relative overflow-hidden transition-colors duration-700 rounded-b-3xl">
@@ -228,6 +250,15 @@ const VoiceChat: React.FC = () => {
       </div>
 
       <div className="flex-1 flex flex-col z-10 relative">
+          {/* Export Button (Top Right) */}
+          {sessionTranscripts.length > 0 && (
+             <div className="absolute top-4 right-4 z-20">
+                <button onClick={handleExport} className="p-2 bg-white/10 backdrop-blur rounded-lg border border-white/10 text-white/70 hover:bg-white/20 hover:text-white transition-all" title="Exporter PDF">
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                </button>
+             </div>
+          )}
+      
           <div className="flex-1 flex flex-col items-center justify-center min-h-[300px]">
             <div className="mb-8 h-8">
                 <span className={`text-sm font-medium tracking-[0.2em] uppercase transition-all duration-300 ${
@@ -270,10 +301,23 @@ const VoiceChat: React.FC = () => {
           </div>
 
           {/* Live Transcription */}
-          {currentTranscription && (
-             <div className="h-16 w-full flex justify-center items-start p-4 z-20">
-                <div className="max-w-md bg-black/40 backdrop-blur-sm rounded-full px-6 py-2 text-white/90 text-sm font-medium animate-pulse text-center shadow-lg border border-white/10">
-                    {currentTranscription}
+          {(isConnected || sessionTranscripts.length > 0) && (
+             <div className="h-48 w-full bg-slate-900/50 backdrop-blur-sm border-t border-slate-800 p-4 overflow-y-auto scroll-smooth" ref={historyRef}>
+                <div className="space-y-3 max-w-2xl mx-auto">
+                    {sessionTranscripts.map((item, i) => (
+                        <div key={i} className={`flex ${item.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                             <div className={`max-w-[80%] rounded-xl px-3 py-2 text-sm ${item.role === 'user' ? 'bg-slate-800 text-slate-300' : 'bg-indigo-900/40 text-indigo-100 border border-indigo-500/30'}`}>
+                                {item.text}
+                             </div>
+                        </div>
+                    ))}
+                    {currentTranscription && (
+                        <div className="flex justify-start">
+                            <div className="max-w-[80%] rounded-xl px-3 py-2 text-sm bg-emerald-900/40 text-emerald-100 border border-emerald-500/30 animate-pulse">
+                                {currentTranscription}
+                            </div>
+                        </div>
+                    )}
                 </div>
              </div>
           )}
@@ -303,13 +347,6 @@ const VoiceChat: React.FC = () => {
           </button>
         )}
       </div>
-      
-      <style>{`
-        @keyframes music {
-          0%, 100% { height: 20%; }
-          50% { height: 80%; }
-        }
-      `}</style>
     </div>
   );
 };
