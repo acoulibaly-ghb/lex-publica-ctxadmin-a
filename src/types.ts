@@ -23,6 +23,7 @@ export interface ChatSession {
     id: string;
     title: string;
     messages: Message[];
+    transcripts?: {role: 'user' | 'model', text: string}[];
     lastModified: number;
     mode: ChatMode;
 }
@@ -31,4 +32,11 @@ export interface AudioVisualizerProps {
   isListening: boolean;
   isSpeaking: boolean;
   volume: number;
+}
+
+// Glossary item supprimé car non utilisé dans la version "Essentielle"
+export interface GlossaryItem {
+  term: string;
+  definition: string;
+  category?: string;
 }
