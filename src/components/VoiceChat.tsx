@@ -2,8 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { GoogleGenAI, LiveServerMessage, Modality } from '@google/genai';
 import { SYSTEM_INSTRUCTION } from '../constants';
 import { createPcmBlob, decodeAudioData } from '../utils/audio-utils';
-import { ChatSession, ChatMode } from '../types';
-import { exportSessionToPDF } from '../utils/file-utils';
 import Visualizer from './Visualizer';
 
 const VoiceChat: React.FC = () => {
@@ -11,16 +9,8 @@ const VoiceChat: React.FC = () => {
   const [status, setStatus] = useState<'disconnected' | 'connecting' | 'listening' | 'speaking'>('disconnected');
   const [error, setError] = useState<string | null>(null);
   const [volume, setVolume] = useState(0);
-  
-  // History & Session Management
-  const [sessions, setSessions] = useState<ChatSession[]>([]);
-  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
-  const [showHistory, setShowHistory] = useState(false);
-  
-  // Transcription state
   const [currentTranscription, setCurrentTranscription] = useState('');
-  const [transcriptionHistory, setTranscriptionHistory] = useState<{role: 'user' | 'model', text: string}[]>([]);
-
+  
   // Refs
   const audioContextRef = useRef<AudioContext | null>(null);
   const inputSourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
@@ -31,110 +21,9 @@ const VoiceChat: React.FC = () => {
   const nextStartTimeRef = useRef<number>(0);
   const scheduledSourcesRef = useRef<AudioBufferSourceNode[]>([]);
   const sessionPromiseRef = useRef<Promise<any> | null>(null);
-  const transcriptionRef = useRef('');
-  const historyRef = useRef<HTMLDivElement>(null);
 
+  // Use import.meta.env for Vite compatibility
   const API_KEY = import.meta.env.VITE_API_KEY;
-
-  // --- HISTORY LOGIC ---
-  useEffect(() => {
-    const savedSessions = localStorage.getItem('juriste_admin_sessions');
-    if (savedSessions) {
-        try {
-            const parsed: ChatSession[] = JSON.parse(savedSessions);
-            const voiceSessions = parsed.filter((s: any) => s.mode === ChatMode.VOICE);
-            voiceSessions.sort((a: any, b: any) => b.lastModified - a.lastModified);
-            setSessions(voiceSessions);
-        } catch (e) {
-            console.error("Failed to load voice sessions", e);
-        }
-    }
-  }, []);
-
-  const saveSessionsToStorage = (updatedSessions: ChatSession[]) => {
-      const allSaved = localStorage.getItem('juriste_admin_sessions');
-      let otherSessions: ChatSession[] = [];
-      if (allSaved) {
-          try {
-            const parsed = JSON.parse(allSaved);
-            otherSessions = parsed.filter((s: any) => s.mode !== ChatMode.VOICE);
-          } catch(e) { console.error(e); }
-      }
-      localStorage.setItem('juriste_admin_sessions', JSON.stringify([...otherSessions, ...updatedSessions]));
-  };
-
-  const createNewVoiceSession = () => {
-      if (isConnected) stopSession();
-      const newId = Date.now().toString();
-      const newSession: ChatSession = {
-          id: newId,
-          title: `Session Vocale ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`,
-          messages: [],
-          transcripts: [],
-          lastModified: Date.now(),
-          mode: ChatMode.VOICE
-      };
-      setSessions(prev => [newSession, ...prev]);
-      setCurrentSessionId(newId);
-      setTranscriptionHistory([]);
-      saveSessionsToStorage([newSession, ...sessions]);
-      setShowHistory(false);
-  };
-
-  const loadVoiceSession = (session: ChatSession) => {
-      if (isConnected) stopSession();
-      setCurrentSessionId(session.id);
-      setTranscriptionHistory(session.transcripts || []);
-      setShowHistory(false);
-  };
-  
-  const deleteSession = (e: React.MouseEvent, id: string) => {
-      e.stopPropagation();
-      const newSessions = sessions.filter(s => s.id !== id);
-      setSessions(newSessions);
-      saveSessionsToStorage(newSessions);
-      
-      // If we deleted the current session, reset or load another
-      if (currentSessionId === id) {
-          if (newSessions.length > 0) {
-              loadVoiceSession(newSessions[0]);
-          } else {
-              // No sessions left, clear UI but don't auto-start to avoid permission prompt spam
-              setCurrentSessionId(null);
-              setTranscriptionHistory([]);
-          }
-      }
-  };
-
-  const updateCurrentSession = (newTranscripts: {role: 'user' | 'model', text: string}[]) => {
-      if (!currentSessionId) return;
-      
-      setSessions(prevSessions => {
-          const updated = prevSessions.map(session => {
-              if (session.id === currentSessionId) {
-                  return {
-                      ...session,
-                      transcripts: newTranscripts,
-                      lastModified: Date.now()
-                  };
-              }
-              return session;
-          }).sort((a, b) => b.lastModified - a.lastModified);
-          
-          saveSessionsToStorage(updated);
-          return updated;
-      });
-  };
-  
-  const handleExport = (e: React.MouseEvent, session: ChatSession) => {
-      e.stopPropagation();
-      const messages = (session.transcripts || []).map(t => ({
-          role: t.role,
-          text: t.text,
-          timestamp: new Date(session.lastModified)
-      }));
-      exportSessionToPDF(session.title, messages);
-  };
 
   const analyzeAudio = () => {
     if (!analyserRef.current) return;
@@ -148,8 +37,6 @@ const VoiceChat: React.FC = () => {
     setVolume(vol);
     animationFrameRef.current = requestAnimationFrame(analyzeAudio);
   };
-
-  useEffect(() => { if (historyRef.current) historyRef.current.scrollTop = historyRef.current.scrollHeight; }, [transcriptionHistory, currentTranscription]);
 
   const cleanupAudio = () => {
     if (animationFrameRef.current) { cancelAnimationFrame(animationFrameRef.current); animationFrameRef.current = null; }
@@ -168,20 +55,27 @@ const VoiceChat: React.FC = () => {
     setStatus('disconnected');
     setVolume(0);
     setCurrentTranscription('');
-    transcriptionRef.current = '';
     sessionPromiseRef.current = null;
   };
 
   const startSession = async () => {
-    if (!currentSessionId) { createNewVoiceSession(); }
-    setError(null); setStatus('connecting');
-    if (!API_KEY) { setError("ClÃ© API manquante."); setStatus('disconnected'); return; }
+    setError(null);
+    setStatus('connecting');
+    
+    if (!API_KEY) {
+        setError("Clé API manquante (VITE_API_KEY).");
+        setStatus('disconnected');
+        return;
+    }
 
     try {
       const ai = new GoogleGenAI({ apiKey: API_KEY });
       const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
       audioContextRef.current = new AudioContextClass({ sampleRate: 24000 });
-      if (audioContextRef.current.state === 'suspended') await audioContextRef.current.resume();
+      
+      if (audioContextRef.current.state === 'suspended') {
+        await audioContextRef.current.resume();
+      }
       
       const inputContext = new AudioContextClass({ sampleRate: 16000 });
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -193,9 +87,14 @@ const VoiceChat: React.FC = () => {
       
       const source = inputContext.createMediaStreamSource(stream);
       const processor = inputContext.createScriptProcessor(4096, 1, 1);
-      inputSourceRef.current = source; processorRef.current = processor;
+      
+      inputSourceRef.current = source;
+      processorRef.current = processor;
 
-      source.connect(analyser); source.connect(processor); processor.connect(inputContext.destination);
+      source.connect(analyser);
+      source.connect(processor);
+      processor.connect(inputContext.destination);
+
       analyzeAudio();
 
       const config = {
@@ -206,28 +105,26 @@ const VoiceChat: React.FC = () => {
 
       const sessionPromise = ai.live.connect({
         model: config.model,
-        config: { responseModalities: [Modality.AUDIO], systemInstruction: config.systemInstruction, outputAudioTranscription: {} },
+        config: {
+            responseModalities: [Modality.AUDIO],
+            systemInstruction: config.systemInstruction,
+            outputAudioTranscription: {},
+        },
         callbacks: {
-          onopen: () => { setIsConnected(true); setStatus('listening'); },
+          onopen: () => {
+            setIsConnected(true);
+            setStatus('listening');
+          },
           onmessage: async (message: LiveServerMessage) => {
             if (message.serverContent?.outputTranscription) {
-                const text = message.serverContent.outputTranscription.text;
-                transcriptionRef.current += text;
-                setCurrentTranscription(transcriptionRef.current);
+                setCurrentTranscription(message.serverContent.outputTranscription.text);
             }
             if (message.serverContent?.turnComplete) {
-                 if (transcriptionRef.current) {
-                    const newEntry: { role: 'user' | 'model'; text: string } = { role: 'model', text: transcriptionRef.current };
-                    // @ts-ignore
-                    setTranscriptionHistory(prev => {
-                        const updated = [...prev, newEntry];
-                        updateCurrentSession(updated);
-                        return updated;
-                    });
-                    transcriptionRef.current = ''; setCurrentTranscription('');
-                 }
+                setCurrentTranscription('');
             }
+
             const base64Audio = message.serverContent?.modelTurn?.parts?.[0]?.inlineData?.data;
+            
             if (base64Audio && audioContextRef.current) {
               setStatus('speaking');
               try {
@@ -235,39 +132,77 @@ const VoiceChat: React.FC = () => {
                 const source = audioContextRef.current.createBufferSource();
                 source.buffer = audioBuffer;
                 source.connect(audioContextRef.current.destination);
+                
                 const currentTime = audioContextRef.current.currentTime;
                 const startTime = Math.max(currentTime, nextStartTimeRef.current);
                 source.start(startTime);
+                
                 nextStartTimeRef.current = startTime + audioBuffer.duration;
                 scheduledSourcesRef.current.push(source);
+                
                 source.onended = () => {
                    const index = scheduledSourcesRef.current.indexOf(source);
-                   if (index > -1) { scheduledSourcesRef.current.splice(index, 1); }
-                   if (scheduledSourcesRef.current.length === 0) { setStatus('listening'); }
+                   if (index > -1) {
+                     scheduledSourcesRef.current.splice(index, 1);
+                   }
+                   if (scheduledSourcesRef.current.length === 0) {
+                       setStatus('listening');
+                   }
                 };
-              } catch (err) { console.error("Audio decoding error", err); }
+              } catch (err) {
+                console.error("Audio decoding error", err);
+              }
             }
+
             if (message.serverContent?.interrupted) {
-               scheduledSourcesRef.current.forEach(src => { try { src.stop(); } catch(e) {} });
-               scheduledSourcesRef.current = []; nextStartTimeRef.current = 0;
-               transcriptionRef.current = ''; setCurrentTranscription(''); setStatus('listening');
+               scheduledSourcesRef.current.forEach(src => {
+                   try { src.stop(); } catch(e) {}
+               });
+               scheduledSourcesRef.current = [];
+               nextStartTimeRef.current = 0;
+               setCurrentTranscription('');
+               setStatus('listening');
             }
           },
-          onclose: () => { stopSession(); },
-          onerror: (err) => { console.error("Session error", err); setError("Erreur de connexion."); stopSession(); }
+          onclose: () => {
+            stopSession();
+          },
+          onerror: (err) => {
+            console.error("Session error", err);
+            setError("Erreur de connexion.");
+            stopSession();
+          }
         }
       });
+
       sessionPromiseRef.current = sessionPromise;
+
       processor.onaudioprocess = (e) => {
         const inputData = e.inputBuffer.getChannelData(0);
         const pcmBlob = createPcmBlob(inputData);
-        if (sessionPromiseRef.current) { sessionPromiseRef.current.then(session => { session.sendRealtimeInput({ media: pcmBlob }); }); }
+        if (sessionPromiseRef.current) {
+            sessionPromiseRef.current.then(session => {
+                session.sendRealtimeInput({ media: pcmBlob });
+            });
+        }
       };
-    } catch (err) { console.error("Failed to start session", err); setError("Impossible d'accÃ©der au microphone."); setStatus('disconnected'); }
+
+    } catch (err) {
+      console.error("Failed to start session", err);
+      setError("Impossible d'accéder au microphone.");
+      setStatus('disconnected');
+    }
   };
 
-  useEffect(() => { return () => { if (isConnected) stopSession(); }; }, [isConnected]);
+  useEffect(() => {
+    return () => {
+      if (isConnected) {
+        stopSession();
+      }
+    };
+  }, [isConnected]);
 
+  // UI Helpers
   const getOrbColor = () => {
     switch(status) {
         case 'connecting': return 'bg-amber-400 shadow-[0_0_60px_rgba(251,191,36,0.4)]';
@@ -285,107 +220,96 @@ const VoiceChat: React.FC = () => {
   };
 
   return (
-    <div className="flex h-[600px] relative bg-[#0f172a] overflow-hidden rounded-b-3xl">
-      
-      {/* SIDEBAR (VOICE) */}
-      <div className={`absolute inset-y-0 left-0 z-30 w-80 bg-slate-900/95 backdrop-blur shadow-xl transform transition-transform duration-300 ease-in-out ${showHistory ? 'translate-x-0' : '-translate-x-full'} flex flex-col border-r border-slate-800`}>
-          <div className="p-4 border-b border-slate-800 flex items-center justify-between">
-              <h2 className="font-bold text-slate-200 flex items-center gap-2">
-                <svg className="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
-                Sessions Vocales
-              </h2>
-              <button onClick={() => setShowHistory(false)} className="p-1 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-              </button>
-          </div>
-          <div className="p-4">
-              <button onClick={createNewVoiceSession} className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-500 transition-all text-sm font-semibold shadow-lg active:scale-95">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
-                  Nouvelle session
-              </button>
-          </div>
-          <div className="flex-1 overflow-y-auto px-3 space-y-2 pb-4">
-              {sessions.map(session => (
-                  <div key={session.id} className={`group flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all border border-transparent ${currentSessionId === session.id ? 'bg-indigo-900/50 text-indigo-100 border-indigo-500/30' : 'hover:bg-slate-800 text-slate-400 hover:border-slate-700'}`} onClick={() => loadVoiceSession(session)}>
-                      <div className="flex-1 min-w-0">
-                          <div className="truncate text-sm font-medium">{session.title}</div>
-                          <div className="text-[10px] opacity-60 truncate mt-0.5">{new Date(session.lastModified).toLocaleDateString()}</div>
-                      </div>
-                      {/* Bouton Export PDF */}
-                      <button onClick={(e) => handleExport(e, session)} className="p-1.5 text-slate-400 hover:text-emerald-400 hover:bg-emerald-900/30 rounded-lg transition-all" title="Exporter">
-                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                      </button>
-                      {/* Bouton SUPPRIMER (NOUVEAU) */}
-                      <button onClick={(e) => deleteSession(e, session.id)} className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-red-900/30 rounded-lg transition-all" title="Supprimer">
-                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                      </button>
-                  </div>
-              ))}
-          </div>
+    <div className="flex flex-col h-[600px] bg-[#0f172a] relative overflow-hidden transition-colors duration-700 rounded-b-3xl">
+      <div className="absolute inset-0 z-0">
+        <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full blur-[120px] opacity-20 transition-all duration-1000 ${
+            status === 'listening' ? 'bg-indigo-600' : status === 'speaking' ? 'bg-emerald-600' : 'bg-slate-800'
+        }`}></div>
       </div>
 
-      {/* Toggle Button */}
-      <div className="absolute top-4 left-4 z-20">
-        <button onClick={() => setShowHistory(!showHistory)} className="p-2 bg-white/10 backdrop-blur rounded-lg border border-white/10 text-white/70 hover:bg-white/20 hover:text-white transition-all">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-        </button>
-      </div>
-
-      {/* MAIN CONTENT */}
-      <div className="flex-1 flex flex-col z-10 relative w-full">
+      <div className="flex-1 flex flex-col z-10 relative">
           <div className="flex-1 flex flex-col items-center justify-center min-h-[300px]">
-             <div className="mb-8 h-8">
-                <span className={`text-sm font-medium tracking-[0.2em] uppercase transition-all duration-300 ${status === 'disconnected' ? 'text-slate-500' : 'text-white/90'}`}>
-                    {status === 'disconnected' && 'PRÃŠT Ã€ COMMENCER'}
-                    {status === 'connecting' && 'CONNEXION...'}
-                    {status === 'listening' && 'JE VOUS Ã‰COUTE'}
-                    {status === 'speaking' && 'JE RÃ‰PONDS'}
+            <div className="mb-8 h-8">
+                <span className={`text-sm font-medium tracking-[0.2em] uppercase transition-all duration-300 ${
+                    status === 'disconnected' ? 'text-slate-500' : 'text-white/90'
+                }`}>
+                    {status === 'disconnected' && 'Prêt à commencer'}
+                    {status === 'connecting' && 'Connexion...'}
+                    {status === 'listening' && 'Je vous écoute'}
+                    {status === 'speaking' && 'Je réponds'}
                 </span>
             </div>
+
             <div className="relative mb-8 group">
                 <div className={`absolute inset-0 rounded-full transition-colors duration-500 ${status === 'listening' ? 'bg-indigo-500' : status === 'speaking' ? 'bg-emerald-400' : 'bg-transparent'} opacity-20 animate-ping ${status === 'disconnected' ? 'hidden' : ''}`}></div>
-                <div className={`w-24 h-24 rounded-full relative z-10 transition-all duration-200 ease-out flex items-center justify-center ${getOrbColor()} ${status === 'disconnected' ? 'opacity-50 grayscale' : 'scale-100'}`} style={{ transform: `scale(${getScale()})` }}>
+                <div 
+                    className={`w-24 h-24 rounded-full relative z-10 transition-all duration-200 ease-out flex items-center justify-center ${getOrbColor()} ${status === 'disconnected' ? 'opacity-50 grayscale' : 'scale-100'}`}
+                    style={{ transform: `scale(${getScale()})` }}
+                >
                     <div className="w-20 h-20 rounded-full bg-white/10 backdrop-blur-md border border-white/30 flex items-center justify-center overflow-hidden shadow-inner">
                         {status === 'speaking' ? (
-                            <div className="flex gap-1 h-8 items-center justify-center">{[1,2,3,4,5].map((i) => (<div key={i} className="w-1 bg-white rounded-full animate-[music_0.8s_ease-in-out_infinite]" style={{ animationDelay: `${i * 0.1}s`, height: `${20 + Math.random() * 60}%` }}></div>))}</div>
+                            <div className="flex gap-1 h-8 items-center justify-center">
+                            {[1,2,3,4,5].map((i) => (
+                                <div key={i} className="w-1 bg-white rounded-full animate-[music_0.8s_ease-in-out_infinite]" style={{ animationDelay: `${i * 0.1}s`, height: `${20 + Math.random() * 60}%` }}></div>
+                            ))}
+                            </div>
                         ) : status === 'listening' ? (
-                            <div className="w-16 h-16 rounded-full border-2 border-white/20 animate-[spin_4s_linear_infinite]"><div className="w-full h-full rounded-full border-t-2 border-white/60"></div></div>
+                            <div className="w-16 h-16 rounded-full border-2 border-white/20 animate-[spin_4s_linear_infinite]">
+                                <div className="w-full h-full rounded-full border-t-2 border-white/60"></div>
+                            </div>
                         ) : (
                             <svg className="w-8 h-8 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
                         )}
                     </div>
                 </div>
             </div>
-            <div className="h-8 w-full max-w-xs opacity-80"><Visualizer isActive={status !== 'disconnected'} mode={status === 'speaking' ? 'speaking' : status === 'listening' ? 'listening' : 'idle'} volume={volume} /></div>
+
+            <div className="h-8 w-full max-w-xs opacity-80">
+                <Visualizer isActive={status !== 'disconnected'} mode={status === 'speaking' ? 'speaking' : status === 'listening' ? 'listening' : 'idle'} volume={volume} />
+            </div>
           </div>
 
-          {(isConnected || transcriptionHistory.length > 0) && (
-             <div className="h-48 w-full bg-slate-900/50 backdrop-blur-sm border-t border-slate-800 p-4 overflow-y-auto scroll-smooth" ref={historyRef}>
-                <div className="space-y-3 max-w-2xl mx-auto">
-                    {transcriptionHistory.map((item, i) => (
-                        <div key={i} className={`flex ${item.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                             <div className={`max-w-[80%] rounded-xl px-3 py-2 text-sm ${item.role === 'user' ? 'bg-slate-800 text-slate-300' : 'bg-indigo-900/40 text-indigo-100 border border-indigo-500/30'}`}>{item.text}</div>
-                        </div>
-                    ))}
-                    {currentTranscription && <div className="flex justify-start"><div className="max-w-[80%] rounded-xl px-3 py-2 text-sm bg-emerald-900/40 text-emerald-100 border border-emerald-500/30 animate-pulse">{currentTranscription}</div></div>}
+          {/* Live Transcription */}
+          {currentTranscription && (
+             <div className="h-16 w-full flex justify-center items-start p-4 z-20">
+                <div className="max-w-md bg-black/40 backdrop-blur-sm rounded-full px-6 py-2 text-white/90 text-sm font-medium animate-pulse text-center shadow-lg border border-white/10">
+                    {currentTranscription}
                 </div>
              </div>
           )}
       </div>
 
-      {error && <div className="absolute top-4 left-1/2 -translate-x-1/2 px-6 py-3 bg-red-500/20 border border-red-500/40 rounded-xl text-red-200 text-sm backdrop-blur-md z-30">{error}</div>}
+      {error && (
+            <div className="absolute top-4 left-1/2 -translate-x-1/2 px-6 py-3 bg-red-500/20 border border-red-500/40 rounded-xl text-red-200 text-sm backdrop-blur-md z-30">
+                {error}
+            </div>
+      )}
 
       <div className="p-6 z-20 flex justify-center items-center bg-slate-900 border-t border-slate-800">
         {!isConnected ? (
-          <button onClick={startSession} className="group relative inline-flex items-center justify-center px-8 py-3 font-semibold text-white transition-all duration-300 bg-indigo-600 rounded-xl hover:bg-indigo-500 hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(99,102,241,0.4)] focus:outline-none">
-            <span className="text-lg tracking-wide">DÃ©marrer la conversation</span>
+          <button
+            onClick={startSession}
+            className="group relative inline-flex items-center justify-center px-8 py-3 font-semibold text-white transition-all duration-300 bg-indigo-600 rounded-xl hover:bg-indigo-500 hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(99,102,241,0.4)] focus:outline-none"
+          >
+            <span className="text-lg tracking-wide">Démarrer la conversation</span>
           </button>
         ) : (
-          <button onClick={stopSession} className="inline-flex items-center justify-center px-8 py-3 font-medium text-red-100 transition-all duration-300 bg-red-500/20 border border-red-500/30 rounded-xl hover:bg-red-500/30 hover:border-red-500/60">
-             <div className="w-2.5 h-2.5 bg-red-400 rounded-full mr-3 animate-pulse"></div>Terminer la session
+          <button
+            onClick={stopSession}
+            className="inline-flex items-center justify-center px-8 py-3 font-medium text-red-100 transition-all duration-300 bg-red-500/20 border border-red-500/30 rounded-xl hover:bg-red-500/30 hover:border-red-500/60"
+          >
+             <div className="w-2.5 h-2.5 bg-red-400 rounded-full mr-3 animate-pulse"></div>
+             Terminer la session
           </button>
         )}
       </div>
+      
+      <style>{`
+        @keyframes music {
+          0%, 100% { height: 20%; }
+          50% { height: 80%; }
+        }
+      `}</style>
     </div>
   );
 };
