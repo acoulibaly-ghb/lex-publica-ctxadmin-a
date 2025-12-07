@@ -88,7 +88,7 @@ const SimpleMarkdown = ({ text, isUser }: { text: string, isUser: boolean }) => 
 
 // --- COMPONENTS ---
 
-// Quiz Component - VERSION ENRICHIE
+// Quiz Component (kept for potential JSON-based quizzes)
 const QuizDisplay = ({ data }: { data: QuizQuestion[] }) => {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [selectedOption, setSelectedOption] = useState<number | null>(null);
@@ -272,12 +272,97 @@ Format : "Note : X/2. [Feedback]"`;
     );
 };
 
+// Help Modal Component
+const HelpModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
+  if (!isOpen) return null;
+
+  const examples = [
+    {
+      icon: "❓",
+      title: "Poser une question",
+      example: "Qu'est-ce qu'un différend en droit international ?",
+      color: "bg-blue-50 border-blue-200 text-blue-700"
+    },
+    {
+      icon: "📝",
+      title: "Demander un QCM",
+      example: "Pose-moi un QCM sur la compétence de la CIJ",
+      color: "bg-indigo-50 border-indigo-200 text-indigo-700"
+    },
+    {
+      icon: "⚖️",
+      title: "Demander un cas pratique",
+      example: "Donne-moi un petit cas pratique sur les mesures conservatoires",
+      color: "bg-purple-50 border-purple-200 text-purple-700"
+    },
+    {
+      icon: "📚",
+      title: "Demander une définition",
+      example: "Définis le juge ad hoc",
+      color: "bg-emerald-50 border-emerald-200 text-emerald-700"
+    }
+  ];
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm animate-in fade-in duration-200" onClick={onClose}>
+      <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full mx-4 overflow-hidden animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
+        <div className="bg-gradient-to-r from-indigo-500 to-purple-600 p-6 text-white">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur">
+                <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold">Comment utiliser ADA ?</h2>
+                <p className="text-indigo-100 text-sm mt-1">Votre assistante en Contentieux International</p>
+              </div>
+            </div>
+            <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-full transition-colors">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+          {examples.map((item, idx) => (
+            <div key={idx} className={`p-5 rounded-2xl border-2 ${item.color} transition-all hover:shadow-md`}>
+              <div className="flex items-start gap-4">
+                <div className="text-3xl flex-shrink-0">{item.icon}</div>
+                <div className="flex-1">
+                  <h3 className="font-bold text-lg mb-2">{item.title}</h3>
+                  <div className="bg-white/60 rounded-xl p-3 font-mono text-sm border border-current/20">
+                    "{item.example}"
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Footer */}
+        <div className="bg-slate-50 px-6 py-4 border-t border-slate-200">
+          <p className="text-sm text-slate-600 text-center">
+            💡 <span className="font-semibold">Astuce :</span> Soyez précis dans vos questions pour obtenir les meilleures réponses !
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // --- MAIN COMPONENT ---
 
 const TextChat: React.FC = () => {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
   
   const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
   const [editTitleInput, setEditTitleInput] = useState("");
@@ -296,13 +381,6 @@ const TextChat: React.FC = () => {
     text: '### Bonjour !\n\nJe suis **ADA**, votre assistante juridique spécialisée en Contentieux International.\n\nJe peux vous aider sur les thèmes suivants :\n- **La Cour Internationale de Justice**\n- **La procédure contentieuse et consultative**\n- **La responsabilité internationale de l\'État**\n\nQuelle est votre question ?', 
     timestamp: new Date() 
   };
-
-  const suggestions = [
-    "Qu'est-ce qu'un différend ?",
-    "L'affaire Mavrommatis",
-    "Avis consultatif vs Arrêt",
-    "Juge ad hoc"
-  ];
 
   useEffect(() => {
     const savedSessions = localStorage.getItem('juriste_admin_sessions');
@@ -385,10 +463,6 @@ const TextChat: React.FC = () => {
       });
   };
 
-  const handleQuizMode = () => {
-    sendMessage(`Quiz interactif`);
-  };
-
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => { 
       if (e.target.files && e.target.files[0]) { 
           const file = e.target.files[0]; 
@@ -429,16 +503,7 @@ const TextChat: React.FC = () => {
       const ai = new GoogleGenAI({ apiKey: API_KEY });
       const parts: any[] = [];
       if (currentAttachment) parts.push({ inlineData: { mimeType: currentAttachment.file.type, data: currentAttachment.base64 } });
-      
-      // 🎯 SOLUTION: Si c'est une demande de quiz courte, étendre le prompt côté IA
-      let finalPrompt = text.trim();
-      if (finalPrompt.toLowerCase().includes('quiz')) {
-        finalPrompt = `Génère 3 questions JSON variées (1 QCM avec 4 choix, 1 Vrai/Faux, 1 cas pratique) sur le contentieux international.
-Format exact: [{"type":"mcq","question":"...","options":["...","...","...","..."],"correctAnswerIndex":0,"explanation":"..."},{"type":"truefalse","question":"...","options":["Vrai","Faux"],"correctAnswerIndex":1,"explanation":"..."},{"type":"case","question":"...","correctAnswer":"...","explanation":"..."}]
-Retourne UNIQUEMENT le JSON sans balises markdown.`;
-      }
-      
-      if (finalPrompt) parts.push({ text: finalPrompt });
+      if (text.trim()) parts.push({ text: text });
       
       const result = await ai.models.generateContentStream({
         model: 'gemini-2.5-flash',
@@ -491,71 +556,68 @@ Retourne UNIQUEMENT le JSON sans balises markdown.`;
                       text: "", 
                       timestamp: new Date(),
                       isQuiz: true,
-                      quizData: quizData
-                  };
-                  updateCurrentSession([...newHistory, finalMsgWithQuiz]);
-              } else {
-                  // Pas un quiz valide, afficher le texte
-                  updateCurrentSession(msgsWithModel.map((m, i) => 
-                      i === msgsWithModel.length - 1 ? { ...m, text: fullText } : m
-                  ));
-              }
-          } catch (e) {
-              console.error("Erreur parsing quiz:", e);
-              // Si le parsing échoue, afficher le texte brut
-              updateCurrentSession(msgsWithModel.map((m, i) => 
-                  i === msgsWithModel.length - 1 ? { ...m, text: fullText } : m
-              ));
-          }
-      } else {
-          // Ce n'est pas du JSON, afficher normalement
-          updateCurrentSession(msgsWithModel.map((m, i) => 
-              i === msgsWithModel.length - 1 ? { ...m, text: fullText } : m
-          ));
-      }
+                      quizData:                    
+                      quizData
+};
+updateCurrentSession([...newHistory, finalMsgWithQuiz]);
+} else {
+// Pas un quiz valide, afficher le texte
+updateCurrentSession(msgsWithModel.map((m, i) =>
+i === msgsWithModel.length - 1 ? { ...m, text: fullText } : m
+));
+}
+} catch (e) {
+console.error("Erreur parsing quiz:", e);
+// Si le parsing échoue, afficher le texte brut
+updateCurrentSession(msgsWithModel.map((m, i) =>
+i === msgsWithModel.length - 1 ? { ...m, text: fullText } : m
+));
+}
+} else {
+// Ce n'est pas du JSON, afficher normalement
+updateCurrentSession(msgsWithModel.map((m, i) =>
+i === msgsWithModel.length - 1 ? { ...m, text: fullText } : m
+));
+}
 
-      setIsLoading(false);
+setIsLoading(false);
 
-    } catch (error) {
-      console.error(error);
-      updateCurrentSession([...newHistory, { role: 'model', text: "Erreur de génération.", timestamp: new Date() }]);
-      setIsLoading(false);
-    }
-  };
+} catch (error) {
+  console.error(error);
+  updateCurrentSession([...newHistory, { role: 'model', text: "Erreur de génération.", timestamp: new Date() }]);
+  setIsLoading(false);
+}
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  };
-
-  const handleSend = () => sendMessage(input);
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 150)}px`;
-    }
-  }, [input]);
-
-  const UserIcon = () => (
-    <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-white shadow-md ring-2 ring-white">
-      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-    </div>
-  );
-
-  const BotIcon = () => (
-    <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-500 flex items-center justify-center text-white shadow-md ring-2 ring-white relative">
-      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"></path></svg>
+};
+const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+if (e.key === 'Enter' && !e.shiftKey) {
+e.preventDefault();
+handleSend();
+}
+};
+const handleSend = () => sendMessage(input);
+useEffect(() => {
+messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+}, [messages]);
+useEffect(() => {
+if (textareaRef.current) {
+textareaRef.current.style.height = 'auto';
+textareaRef.current.style.height = ${Math.min(textareaRef.current.scrollHeight, 150)}px;
+}
+}, [input]);
+const UserIcon = () => (
+<div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-white shadow-md ring-2 ring-white">
+<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+</div>
+);
+const BotIcon = () => (
+<div className="w-8 h-8 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-500 flex items-center justify-center text-white shadow-md ring-2 ring-white relative">
+<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"></path></svg>
 </div>
 );
 return (
 <div className="flex h-[600px] relative bg-slate-50/50 overflow-hidden rounded-b-3xl">
+<HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} />
 {/* SIDEBAR */}
   <div 
     className={`absolute inset-y-0 left-0 z-30 w-80 bg-white shadow-2xl transform transition-transform duration-300 ease-in-out ${showHistory ? 'translate-x-0' : '-translate-x-full'} flex flex-col border-r border-slate-100`}
@@ -714,24 +776,54 @@ return (
 
         {!isLoading && !attachment && (
             <div className="flex gap-2 mb-4 overflow-x-auto pb-2 scrollbar-hide items-center">
+                
+                {/* Bouton Aide */}
                 <button 
-                    onClick={handleQuizMode}
-                    className="whitespace-nowrap px-3 py-1.5 bg-rose-100 text-rose-700 text-xs font-bold rounded-full border border-rose-200 hover:bg-rose-200 hover:border-rose-300 transition-colors flex items-center gap-1 shadow-sm"
+                    onClick={() => setShowHelp(true)}
+                    className="whitespace-nowrap px-4 py-2 bg-yellow-100 text-yellow-700 text-sm font-bold rounded-full border-2 border-yellow-200 hover:bg-yellow-200 hover:border-yellow-300 transition-all flex items-center gap-2 shadow-sm"
                 >
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
-                    Collez-moi !
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    Aide
+                </button>
+                
+                {/* Bouton QCM */}
+                <button 
+                    onClick={() => sendMessage("Pose-moi un QCM sur le contentieux international")}
+                    className="whitespace-nowrap px-4 py-2 bg-blue-100 text-blue-700 text-sm font-bold rounded-full border-2 border-blue-200 hover:bg-blue-200 hover:border-blue-300 transition-all flex items-center gap-2 shadow-sm"
+                >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+                    </svg>
+                    Pose-moi un QCM
+                </button>
+                
+                {/* Bouton Cas pratique */}
+                <button 
+                    onClick={() => sendMessage("Donne-moi un petit cas pratique")}
+                    className="whitespace-nowrap px-4 py-2 bg-purple-100 text-purple-700 text-sm font-bold rounded-full border-2 border-purple-200 hover:bg-purple-200 hover:border-purple-300 transition-all flex items-center gap-2 shadow-sm"
+                >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"></path>
+                    </svg>
+                    Donne-moi un petit cas pratique
+                </button>
+                
+                {/* Bouton Définition */}
+                <button 
+                    onClick={() => {
+                        setInput("Définis ou explique-moi : ");
+                        textareaRef.current?.focus();
+                    }}
+                    className="whitespace-nowrap px-4 py-2 bg-emerald-100 text-emerald-700 text-sm font-bold rounded-full border-2 border-emerald-200 hover:bg-emerald-200 hover:border-emerald-300 transition-all flex items-center gap-2 shadow-sm"
+                >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                    </svg>
+                    Définis ou explique-moi
                 </button>
 
-                <div className="w-px h-6 bg-slate-200 mx-1"></div>
-                {suggestions.map((s, i) => (
-                    <button 
-                        key={i}
-                        onClick={() => sendMessage(s)}
-                        className="whitespace-nowrap px-3 py-1.5 bg-indigo-50 text-indigo-600 text-xs font-medium rounded-full border border-indigo-100 hover:bg-indigo-100 hover:border-indigo-200 transition-colors"
-                    >
-                        {s}
-                    </button>
-                ))}
             </div>
         )}
 
