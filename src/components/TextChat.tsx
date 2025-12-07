@@ -386,7 +386,8 @@ Format : "Note : X/2. [Feedback]"`;
   };
 
   const handleQuizMode = () => {
-    sendMessage(`Génère un quiz de 3 questions VARIÉES sur le droit du contentieux international au format JSON strict.
+  sendMessage(`QUIZ_MODE_ACTIVATED`);
+};
 
 IMPORTANT : Mélange les types de questions (un de chaque type) :
 - Type "mcq" : QCM avec 4 options
@@ -442,7 +443,24 @@ IMPÉRATIF : Retourne UNIQUEMENT le tableau JSON, sans texte avant ou après, sa
         return;
     }
 
-    const userMsg: Message = { role: 'user', text: attachment ? `[Fichier: ${attachment.file.name}] ${text}` : text, timestamp: new Date() };
+    // Message utilisateur
+let displayText = text;
+let actualPrompt = text;
+
+// Si c'est un quiz, afficher un message court mais envoyer le vrai prompt
+if (text === 'QUIZ_MODE_ACTIVATED') {
+  displayText = '🎯 Génère un quiz interactif';
+  actualPrompt = `Génère 3 questions JSON (1 QCM, 1 Vrai/Faux, 1 cas pratique) sur le contentieux international.
+Format: [{"type":"mcq","question":"...","options":["..."],"correctAnswerIndex":0,"explanation":"..."},{"type":"truefalse","question":"...","options":["Vrai","Faux"],"correctAnswerIndex":1,"explanation":"..."},{"type":"case","question":"...","correctAnswer":"...","explanation":"..."}]
+Retourne UNIQUEMENT le JSON sans balises markdown.`;
+}
+
+const userMsg: Message = { 
+  role: 'user', 
+  text: attachment ? `[Fichier: ${attachment.file.name}] ${displayText}` : displayText, 
+  timestamp: new Date() 
+};
+    
     const newHistory = [...messages, userMsg];
     updateCurrentSession(newHistory);
     setInput(''); 
@@ -455,7 +473,7 @@ IMPÉRATIF : Retourne UNIQUEMENT le tableau JSON, sans texte avant ou après, sa
       const ai = new GoogleGenAI({ apiKey: API_KEY });
       const parts: any[] = [];
       if (currentAttachment) parts.push({ inlineData: { mimeType: currentAttachment.file.type, data: currentAttachment.base64 } });
-      if (text.trim()) parts.push({ text: text });
+      if (actualPrompt.trim()) parts.push({ text: actualPrompt });
       
       const result = await ai.models.generateContentStream({
         model: 'gemini-2.5-flash',
