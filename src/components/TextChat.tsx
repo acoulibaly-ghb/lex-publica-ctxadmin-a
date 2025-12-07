@@ -274,7 +274,7 @@ Format : "Note : X/2. [Feedback]"`;
 
 // --- MAIN COMPONENT ---
 
-  const TextChat: React.FC = () => {
+const TextChat: React.FC = () => {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
@@ -386,39 +386,7 @@ Format : "Note : X/2. [Feedback]"`;
   };
 
   const handleQuizMode = () => {
-  sendMessage(`QUIZ_MODE_ACTIVATED`);
-};
-
-IMPORTANT : Mélange les types de questions (un de chaque type) :
-- Type "mcq" : QCM avec 4 options
-- Type "truefalse" : Vrai/Faux avec 2 options  
-- Type "case" : Mini cas pratique (question ouverte)
-
-Format JSON EXACT à respecter :
-[
-  {
-    "type": "mcq",
-    "question": "Quelle est la nature juridique de la CIJ ?",
-    "options": ["Organe principal de l'ONU", "Organe subsidiaire", "Tribunal arbitral", "Cour régionale"],
-    "correctAnswerIndex": 0,
-    "explanation": "La CIJ est l'organe judiciaire principal des Nations Unies selon l'article 92 de la Charte."
-  },
-  {
-    "type": "truefalse",
-    "question": "Un avis consultatif de la CIJ a force obligatoire.",
-    "options": ["Vrai", "Faux"],
-    "correctAnswerIndex": 1,
-    "explanation": "Les avis consultatifs n'ont pas de force obligatoire, contrairement aux arrêts contentieux."
-  },
-  {
-    "type": "case",
-    "question": "L'État A rompt unilatéralement un traité bilatéral avec l'État B sans justification. L'État B peut-il saisir la CIJ ? Quelles sont les conditions ?",
-    "correctAnswer": "Éléments attendus : consentement des deux États (clause compromissoire ou compromis), compétence ratione materiae de la CIJ, épuisement éventuel des voies de recours, qualification du différend.",
-    "explanation": "La saisine de la CIJ nécessite le consentement des deux parties. Si le traité contient une clause compromissoire prévoyant la compétence de la CIJ, l'État B peut la saisir. Sinon, il faudrait un compromis ad hoc ou une déclaration d'acceptation de juridiction obligatoire."
-  }
-]
-
-IMPÉRATIF : Retourne UNIQUEMENT le tableau JSON, sans texte avant ou après, sans balises markdown.`);
+    sendMessage(`Quiz interactif`);
   };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => { 
@@ -443,23 +411,11 @@ IMPÉRATIF : Retourne UNIQUEMENT le tableau JSON, sans texte avant ou après, sa
         return;
     }
 
-    // Message utilisateur
-let displayText = text;
-let actualPrompt = text;
-
-// Si c'est un quiz, afficher un message court mais envoyer le vrai prompt
-if (text === 'QUIZ_MODE_ACTIVATED') {
-  displayText = '🎯 Génère un quiz interactif';
-  actualPrompt = `Génère 3 questions JSON (1 QCM, 1 Vrai/Faux, 1 cas pratique) sur le contentieux international.
-Format: [{"type":"mcq","question":"...","options":["..."],"correctAnswerIndex":0,"explanation":"..."},{"type":"truefalse","question":"...","options":["Vrai","Faux"],"correctAnswerIndex":1,"explanation":"..."},{"type":"case","question":"...","correctAnswer":"...","explanation":"..."}]
-Retourne UNIQUEMENT le JSON sans balises markdown.`;
-}
-
-const userMsg: Message = { 
-  role: 'user', 
-  text: attachment ? `[Fichier: ${attachment.file.name}] ${displayText}` : displayText, 
-  timestamp: new Date() 
-};
+    const userMsg: Message = { 
+      role: 'user', 
+      text: attachment ? `[Fichier: ${attachment.file.name}] ${text}` : text, 
+      timestamp: new Date() 
+    };
     
     const newHistory = [...messages, userMsg];
     updateCurrentSession(newHistory);
@@ -473,7 +429,16 @@ const userMsg: Message = {
       const ai = new GoogleGenAI({ apiKey: API_KEY });
       const parts: any[] = [];
       if (currentAttachment) parts.push({ inlineData: { mimeType: currentAttachment.file.type, data: currentAttachment.base64 } });
-      if (actualPrompt.trim()) parts.push({ text: actualPrompt });
+      
+      // 🎯 SOLUTION: Si c'est une demande de quiz courte, étendre le prompt côté IA
+      let finalPrompt = text.trim();
+      if (finalPrompt.toLowerCase().includes('quiz')) {
+        finalPrompt = `Génère 3 questions JSON variées (1 QCM avec 4 choix, 1 Vrai/Faux, 1 cas pratique) sur le contentieux international.
+Format exact: [{"type":"mcq","question":"...","options":["...","...","...","..."],"correctAnswerIndex":0,"explanation":"..."},{"type":"truefalse","question":"...","options":["Vrai","Faux"],"correctAnswerIndex":1,"explanation":"..."},{"type":"case","question":"...","correctAnswer":"...","explanation":"..."}]
+Retourne UNIQUEMENT le JSON sans balises markdown.`;
+      }
+      
+      if (finalPrompt) parts.push({ text: finalPrompt });
       
       const result = await ai.models.generateContentStream({
         model: 'gemini-2.5-flash',
@@ -482,74 +447,74 @@ const userMsg: Message = {
       });
       
       let fullText = '';
-const msgsWithModel = [...newHistory, { role: 'model', text: '', timestamp: new Date() } as Message];
-updateCurrentSession(msgsWithModel);
+      const msgsWithModel = [...newHistory, { role: 'model', text: '', timestamp: new Date() } as Message];
+      updateCurrentSession(msgsWithModel);
 
-for await (const chunk of result) {
-    const chunkText = chunk.text; 
-    if (chunkText) {
-      fullText += chunkText;
-      
-      // Afficher pendant le streaming SAUF si ça ressemble à du JSON
-      const trimmed = fullText.trim();
-      const looksLikeJson = trimmed.startsWith('[') || trimmed.startsWith('```json') || trimmed.startsWith('```\n[');
-      
-      if (!looksLikeJson) {
+      for await (const chunk of result) {
+          const chunkText = chunk.text; 
+          if (chunkText) {
+            fullText += chunkText;
+            
+            // Afficher pendant le streaming SAUF si ça ressemble à du JSON
+            const trimmed = fullText.trim();
+            const looksLikeJson = trimmed.startsWith('[') || trimmed.startsWith('```json') || trimmed.startsWith('```\n[');
+            
+            if (!looksLikeJson) {
+                updateCurrentSession(msgsWithModel.map((m, i) => 
+                    i === msgsWithModel.length - 1 ? { ...m, text: fullText } : m
+                ));
+            }
+          }
+      }
+
+      // Nettoyage et détection du quiz JSON
+      let cleanText = fullText.trim();
+
+      // Retirer les balises markdown si présentes
+      if (cleanText.startsWith('```json')) {
+          cleanText = cleanText.replace(/^```json\s*/i, '').replace(/```\s*$/, '');
+      } else if (cleanText.startsWith('```')) {
+          cleanText = cleanText.replace(/^```\s*/, '').replace(/```\s*$/, '');
+      }
+
+      cleanText = cleanText.trim();
+
+      // Détection du quiz JSON
+      if (cleanText.startsWith('[') && cleanText.endsWith(']')) {
+          try {
+              const quizData = JSON.parse(cleanText);
+              
+              // Vérifier que c'est bien un tableau de questions
+              if (Array.isArray(quizData) && quizData.length > 0 && quizData[0].type) {
+                  const finalMsgWithQuiz: Message = { 
+                      role: 'model', 
+                      text: "", 
+                      timestamp: new Date(),
+                      isQuiz: true,
+                      quizData: quizData
+                  };
+                  updateCurrentSession([...newHistory, finalMsgWithQuiz]);
+              } else {
+                  // Pas un quiz valide, afficher le texte
+                  updateCurrentSession(msgsWithModel.map((m, i) => 
+                      i === msgsWithModel.length - 1 ? { ...m, text: fullText } : m
+                  ));
+              }
+          } catch (e) {
+              console.error("Erreur parsing quiz:", e);
+              // Si le parsing échoue, afficher le texte brut
+              updateCurrentSession(msgsWithModel.map((m, i) => 
+                  i === msgsWithModel.length - 1 ? { ...m, text: fullText } : m
+              ));
+          }
+      } else {
+          // Ce n'est pas du JSON, afficher normalement
           updateCurrentSession(msgsWithModel.map((m, i) => 
               i === msgsWithModel.length - 1 ? { ...m, text: fullText } : m
           ));
       }
-    }
-}
 
-// Nettoyage et détection du quiz JSON
-let cleanText = fullText.trim();
-
-// Retirer les balises markdown si présentes
-if (cleanText.startsWith('```json')) {
-    cleanText = cleanText.replace(/^```json\s*/i, '').replace(/```\s*$/, '');
-} else if (cleanText.startsWith('```')) {
-    cleanText = cleanText.replace(/^```\s*/, '').replace(/```\s*$/, '');
-}
-
-cleanText = cleanText.trim();
-
-// Détection du quiz JSON
-if (cleanText.startsWith('[') && cleanText.endsWith(']')) {
-    try {
-        const quizData = JSON.parse(cleanText);
-        
-        // Vérifier que c'est bien un tableau de questions
-        if (Array.isArray(quizData) && quizData.length > 0 && quizData[0].type) {
-            const finalMsgWithQuiz: Message = { 
-                role: 'model', 
-                text: "", 
-                timestamp: new Date(),
-                isQuiz: true,
-                quizData: quizData
-            };
-            updateCurrentSession([...newHistory, finalMsgWithQuiz]);
-        } else {
-            // Pas un quiz valide, afficher le texte
-            updateCurrentSession(msgsWithModel.map((m, i) => 
-                i === msgsWithModel.length - 1 ? { ...m, text: fullText } : m
-            ));
-        }
-    } catch (e) {
-        console.error("Erreur parsing quiz:", e);
-        // Si le parsing échoue, afficher le texte brut
-        updateCurrentSession(msgsWithModel.map((m, i) => 
-            i === msgsWithModel.length - 1 ? { ...m, text: fullText } : m
-        ));
-    }
-} else {
-    // Ce n'est pas du JSON, afficher normalement
-    updateCurrentSession(msgsWithModel.map((m, i) => 
-        i === msgsWithModel.length - 1 ? { ...m, text: fullText } : m
-    ));
-}
-
-setIsLoading(false);
+      setIsLoading(false);
 
     } catch (error) {
       console.error(error);
@@ -587,12 +552,11 @@ setIsLoading(false);
   const BotIcon = () => (
     <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-500 flex items-center justify-center text-white shadow-md ring-2 ring-white relative">
       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"></path></svg>
-    </div>
-  );
-
-  return (
-    <div className="flex h-[600px] relative bg-slate-50/50 overflow-hidden rounded-b-3xl">
-  {/* SIDEBAR */}
+</div>
+);
+return (
+<div className="flex h-[600px] relative bg-slate-50/50 overflow-hidden rounded-b-3xl">
+{/* SIDEBAR */}
   <div 
     className={`absolute inset-y-0 left-0 z-30 w-80 bg-white shadow-2xl transform transition-transform duration-300 ease-in-out ${showHistory ? 'translate-x-0' : '-translate-x-full'} flex flex-col border-r border-slate-100`}
   >
@@ -701,10 +665,10 @@ setIsLoading(false);
             </div>
             
             <div
-            className={`max-w-[85%] rounded-3xl px-6 py-5 shadow-sm ${
+            className={`rounded-3xl px-6 py-5 shadow-sm ${
                 msg.role === 'user'
-                ? 'bg-indigo-600 text-white rounded-tr-lg'
-                : 'bg-white text-slate-800 rounded-tl-lg border border-slate-200'
+                ? 'bg-indigo-600 text-white rounded-tr-lg max-w-[75%]'
+                : 'bg-white text-slate-800 rounded-tl-lg border border-slate-200 max-w-[85%]'
             } relative group`}
             >
                 {msg.isQuiz && msg.quizData ? (
