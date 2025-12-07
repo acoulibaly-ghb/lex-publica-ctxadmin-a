@@ -464,15 +464,15 @@ IMPÉRATIF : Retourne UNIQUEMENT le tableau JSON, sans texte avant ou après, sa
       });
       
       let fullText = '';
-      const msgsWithModel = [...newHistory, { role: 'model', text: '', timestamp: new Date() } as Message];
-      updateCurrentSession(msgsWithModel);
+const msgsWithModel = [...newHistory, { role: 'model', text: '', timestamp: new Date() } as Message];
+updateCurrentSession(msgsWithModel);
 
-      for await (const chunk of result) {
+for await (const chunk of result) {
     const chunkText = chunk.text; 
     if (chunkText) {
       fullText += chunkText;
       
-      // Ne pas afficher pendant le streaming si c'est un quiz JSON
+      // Afficher pendant le streaming SAUF si ça commence par [ (quiz JSON)
       if (!fullText.trim().startsWith('[')) {
           updateCurrentSession(msgsWithModel.map((m, i) => 
               i === msgsWithModel.length - 1 ? { ...m, text: fullText } : m
@@ -480,25 +480,37 @@ IMPÉRATIF : Retourne UNIQUEMENT le tableau JSON, sans texte avant ou après, sa
       }
     }
 }
-      
-      // Détection du quiz JSON
-      if (fullText.trim().startsWith('[') && fullText.trim().endsWith(']')) {
-          try {
-              const quizData = JSON.parse(fullText);
-              const finalMsgWithQuiz: Message = { 
-                  role: 'model', 
-                  text: "", 
-                  timestamp: new Date(),
-                  isQuiz: true,
-                  quizData: quizData
-              };
-              updateCurrentSession([...newHistory, finalMsgWithQuiz]);
-          } catch (e) {
-              console.error("Erreur parsing quiz:", e);
-          }
-      }
 
-      setIsLoading(false);
+// Détection du quiz JSON APRÈS le streaming complet
+if (fullText.trim().startsWith('[') && fullText.trim().endsWith(']')) {
+    try {
+        const quizData = JSON.parse(fullText);
+        const finalMsgWithQuiz: Message = { 
+            role: 'model', 
+            text: "", 
+            timestamp: new Date(),
+            isQuiz: true,
+            quizData: quizData
+        };
+        // Remplace le message vide par le quiz
+        updateCurrentSession([...newHistory, finalMsgWithQuiz]);
+    } catch (e) {
+        console.error("Erreur parsing quiz:", e);
+        // Si le parsing échoue, afficher le texte brut
+        updateCurrentSession(msgsWithModel.map((m, i) => 
+            i === msgsWithModel.length - 1 ? { ...m, text: fullText } : m
+        ));
+    }
+} else {
+    // Si ce n'est pas un quiz, mettre à jour avec le texte final (si pas déjà fait)
+    if (fullText.trim().startsWith('[')) {
+        updateCurrentSession(msgsWithModel.map((m, i) => 
+            i === msgsWithModel.length - 1 ? { ...m, text: fullText } : m
+        ));
+    }
+}
+
+setIsLoading(false);
 
     } catch (error) {
       console.error(error);
