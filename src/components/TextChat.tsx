@@ -99,6 +99,199 @@ const cleanTextForTTS = (text: string) => {
         .replace(/- /g, '') 
         .trim();
 };
+// --- COMPONENTS ---
+
+// Quiz Component - VERSION ENRICHIE
+const QuizDisplay = ({ data }: { data: QuizQuestion[] }) => {
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const [selectedOption, setSelectedOption] = useState<number | null>(null);
+    const [userAnswer, setUserAnswer] = useState<string>('');
+    const [isAnswered, setIsAnswered] = useState(false);
+    const [score, setScore] = useState(0);
+    const [showScore, setShowScore] = useState(false);
+    const [aiEvaluation, setAiEvaluation] = useState<string>('');
+
+    const question = data[currentIndex];
+
+    const handleOptionClick = (idx: number) => {
+        if (isAnswered || question.type === 'case') return;
+        setSelectedOption(idx);
+        setIsAnswered(true);
+        if (idx === question.correctAnswerIndex) setScore(s => s + 1);
+    };
+
+    const handleCaseSubmit = async () => {
+        if (!userAnswer.trim() || isAnswered) return;
+        setIsAnswered(true);
+        
+        // Évaluation par l'IA
+        const prompt = `Tu es un correcteur en droit du contentieux international.
+Question posée : "${question.question}"
+Réponse de l'étudiant : "${userAnswer}"
+Éléments de réponse attendus : "${question.correctAnswer}"
+
+Évalue cette réponse sur 2 points et donne un feedback constructif (2-3 phrases max).
+Format : "Note : X/2. [Feedback]"`;
+
+        try {
+            const API_KEY = import.meta.env.VITE_API_KEY;
+            if (!API_KEY) throw new Error("API Key missing");
+            
+            const ai = new GoogleGenAI({ apiKey: API_KEY });
+            const result = await ai.models.generateContent({
+                model: 'gemini-2.5-flash',
+                contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            });
+            
+            const evaluation = result.response?.text() || "Évaluation en cours...";
+            setAiEvaluation(evaluation);
+            
+            // Attribution du score basé sur l'évaluation (simple heuristique)
+            if (evaluation.includes("2/2") || evaluation.includes("Excellent")) {
+                setScore(s => s + 1);
+            } else if (evaluation.includes("1.5/2") || evaluation.includes("1/2")) {
+                setScore(s => s + 0.5);
+            }
+        } catch (error) {
+            console.error(error);
+            setAiEvaluation("Erreur lors de l'évaluation. Votre réponse a été enregistrée.");
+        }
+    };
+
+    const nextQuestion = () => {
+        if (currentIndex < data.length - 1) {
+            setCurrentIndex(prev => prev + 1);
+            setSelectedOption(null);
+            setUserAnswer('');
+            setAiEvaluation('');
+            setIsAnswered(false);
+        } else {
+            setShowScore(true);
+        }
+    };
+
+    if (showScore) {
+        const percentage = Math.round((score / data.length) * 100);
+        return (
+            <div className="bg-gradient-to-br from-indigo-50 to-white p-8 rounded-3xl border border-indigo-100 text-center shadow-sm">
+                <div className="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold">
+                    {percentage}%
+                </div>
+                <h3 className="text-2xl font-bold text-indigo-900 mb-2">Quiz Terminé !</h3>
+                <p className="text-lg mb-6 text-slate-600">
+                    Votre score : <span className="font-bold text-indigo-600">{score.toFixed(1)} / {data.length}</span>
+                </p>
+                
+                <div className="w-full bg-slate-100 rounded-full h-3 mb-6 overflow-hidden">
+                    <div className="bg-indigo-600 h-full rounded-full transition-all duration-1000 ease-out" style={{ width: `${percentage}%` }}></div>
+                </div>
+                
+                <p className="text-sm font-medium text-slate-500 bg-slate-50 py-2 px-4 rounded-lg inline-block">
+                    {percentage >= 80 ? "🎉 Excellent ! Maîtrise parfaite." : percentage >= 60 ? "👍 Bon travail !" : "📚 Continuez à réviser le cours."}
+                </p>
+            </div>
+        );
+    }
+
+    // Rendu selon le type de question
+    return (
+        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm mt-4 max-w-2xl mx-auto">
+            <div className="flex justify-between items-center mb-6">
+                <span className="text-xs font-bold text-indigo-500 bg-indigo-50 px-2 py-1 rounded-md uppercase tracking-wider">
+                    Question {currentIndex + 1}/{data.length}
+                </span>
+                <span className="text-xs font-bold px-2 py-1 rounded-md uppercase tracking-wider" style={{
+                    backgroundColor: question.type === 'mcq' ? '#e0f2fe' : question.type === 'truefalse' ? '#fef3c7' : '#f0fdf4',
+                    color: question.type === 'mcq' ? '#0369a1' : question.type === 'truefalse' ? '#92400e' : '#166534'
+                }}>
+                    {question.type === 'mcq' ? '📝 QCM' : question.type === 'truefalse' ? '✓/✗ Vrai/Faux' : '⚖️ Cas pratique'}
+                </span>
+            </div>
+            
+            <h3 className="text-lg font-bold text-slate-800 mb-6 leading-snug">{question.question}</h3>
+            
+            {/* QCM ou Vrai/Faux */}
+            {(question.type === 'mcq' || question.type === 'truefalse') && question.options && (
+                <div className="space-y-3">
+                    {question.options.map((opt, idx) => {
+                        let btnClass = "w-full text-left p-4 rounded-xl border-2 transition-all text-sm font-medium flex items-center justify-between group ";
+                        if (isAnswered) {
+                            if (idx === question.correctAnswerIndex) btnClass += "bg-emerald-50 border-emerald-500 text-emerald-700";
+                            else if (idx === selectedOption) btnClass += "bg-rose-50 border-rose-500 text-rose-700";
+                            else btnClass += "bg-slate-50 border-transparent text-slate-400 opacity-50";
+                        } else {
+                            btnClass += "bg-white border-slate-100 hover:border-indigo-400 hover:bg-indigo-50 text-slate-700 hover:shadow-md";
+                        }
+                        return (
+                            <button key={idx} onClick={() => handleOptionClick(idx)} className={btnClass} disabled={isAnswered}>
+                                <span>{opt}</span>
+                                {isAnswered && idx === question.correctAnswerIndex && <svg className="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>}
+                                {isAnswered && idx === selectedOption && idx !== question.correctAnswerIndex && <svg className="w-5 h-5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>}
+                            </button>
+                        );
+                    })}
+                </div>
+            )}
+
+            {/* Cas pratique */}
+            {question.type === 'case' && (
+                <div className="space-y-4">
+                    <textarea
+                        value={userAnswer}
+                        onChange={(e) => setUserAnswer(e.target.value)}
+                        placeholder="Rédigez votre réponse ici (5-10 lignes)..."
+                        disabled={isAnswered}
+                        className="w-full p-4 border-2 border-slate-200 rounded-xl focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 outline-none resize-none min-h-[150px] text-sm leading-relaxed disabled:bg-slate-50 disabled:text-slate-500"
+                        rows={6}
+                    />
+                    {!isAnswered && (
+                        <button 
+                            onClick={handleCaseSubmit}
+                            disabled={!userAnswer.trim()}
+                            className="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-md hover:shadow-lg disabled:bg-slate-300 disabled:cursor-not-allowed"
+                        >
+                            Soumettre ma réponse
+                        </button>
+                    )}
+                </div>
+            )}
+
+            {/* Feedback */}
+            {isAnswered && (
+                <div className="mt-6 animate-in fade-in slide-in-from-top-4 duration-500 space-y-4">
+                    {/* Évaluation IA pour cas pratique */}
+                    {question.type === 'case' && aiEvaluation && (
+                        <div className="p-5 rounded-xl text-sm leading-relaxed bg-blue-50 text-blue-900 border border-blue-100">
+                            <div className="flex items-start gap-2 mb-2">
+                                <svg className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                <div>
+                                    <span className="font-bold uppercase text-xs tracking-wider opacity-70 block mb-1">Évaluation</span>
+                                    {aiEvaluation}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    
+                    {/* Explication */}
+                    <div className={`p-5 rounded-xl text-sm leading-relaxed shadow-sm ${
+                        question.type === 'case' ? 'bg-slate-50 text-slate-900 border border-slate-100' :
+                        selectedOption === question.correctAnswerIndex ? 'bg-emerald-50 text-emerald-900 border border-emerald-100' : 'bg-rose-50 text-rose-900 border border-rose-100'
+                    }`}>
+                        <div className="flex gap-2 mb-1">
+                            <span className="font-bold uppercase text-xs tracking-wider opacity-70">Explication</span>
+                        </div>
+                        {question.explanation}
+                    </div>
+                    
+                    <button onClick={nextQuestion} className="w-full py-3.5 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-md hover:shadow-lg active:scale-[0.99] flex items-center justify-center gap-2">
+                        {currentIndex < data.length - 1 ? "Question Suivante" : "Voir mon score"}
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+                    </button>
+                </div>
+            )}
+        </div>
+    );
+};
 
 // --- MAIN COMPONENT ---
 
