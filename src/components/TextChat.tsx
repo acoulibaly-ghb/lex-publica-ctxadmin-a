@@ -728,10 +728,10 @@ return (
             
             <div
             className={`rounded-3xl px-6 py-5 shadow-sm ${
-                msg.role === 'user'
-                ? 'bg-indigo-600 text-white rounded-tr-lg max-w-[75%]'
-                : 'bg-white text-slate-800 rounded-tl-lg border border-slate-200 max-w-[85%]'
-            } relative group`}
+    msg.role === 'user'
+    ? 'bg-indigo-600 text-white font-bold rounded-tr-lg max-w-[75%]'
+    : 'bg-white text-slate-800 rounded-tl-lg border border-slate-200 max-w-[85%]'
+} relative group`}
             >
                 {msg.isQuiz && msg.quizData ? (
                     <QuizDisplay data={msg.quizData} />
@@ -790,7 +790,7 @@ return (
                 
                 {/* Bouton QCM */}
                 <button 
-                    onClick={() => sendMessage("Pose-moi un QCM sur le contentieux international")}
+                    onClick={() => sendMessage("Pose-moi un QCM sur le contentieux international. Ne donne PAS la réponse correcte tout de suite, attends que je réponde d'abord.")}
                     className="whitespace-nowrap px-4 py-2 bg-blue-100 text-blue-700 text-sm font-bold rounded-full border-2 border-blue-200 hover:bg-blue-200 hover:border-blue-300 transition-all flex items-center gap-2 shadow-sm"
                 >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
