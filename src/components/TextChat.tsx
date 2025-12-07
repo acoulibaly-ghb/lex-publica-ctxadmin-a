@@ -468,14 +468,18 @@ IMPÉRATIF : Retourne UNIQUEMENT le tableau JSON, sans texte avant ou après, sa
       updateCurrentSession(msgsWithModel);
 
       for await (const chunk of result) {
-          const chunkText = chunk.text; 
-          if (chunkText) {
-            fullText += chunkText;
-            updateCurrentSession(msgsWithModel.map((m, i) => 
-                i === msgsWithModel.length - 1 ? { ...m, text: fullText } : m
-            ));
-          }
+    const chunkText = chunk.text; 
+    if (chunkText) {
+      fullText += chunkText;
+      
+      // Ne pas afficher pendant le streaming si c'est un quiz JSON
+      if (!fullText.trim().startsWith('[')) {
+          updateCurrentSession(msgsWithModel.map((m, i) => 
+              i === msgsWithModel.length - 1 ? { ...m, text: fullText } : m
+          ));
       }
+    }
+}
       
       // Détection du quiz JSON
       if (fullText.trim().startsWith('[') && fullText.trim().endsWith(']')) {
