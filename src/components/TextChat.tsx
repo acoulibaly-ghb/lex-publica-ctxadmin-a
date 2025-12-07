@@ -274,7 +274,7 @@ Format : "Note : X/2. [Feedback]"`;
 
 // --- MAIN COMPONENT ---
 
-const TextChat: React.FC = () => {
+  const TextChat: React.FC = () => {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
