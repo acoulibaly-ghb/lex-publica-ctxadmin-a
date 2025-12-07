@@ -600,10 +600,10 @@ useEffect(() => {
 messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
 }, [messages]);
 useEffect(() => {
-if (textareaRef.current) {
-textareaRef.current.style.height = 'auto';
-textareaRef.current.style.height = ${Math.min(textareaRef.current.scrollHeight, 150)}px;
-}
+  if (textareaRef.current) {
+    textareaRef.current.style.height = 'auto';
+    textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 150)}px`;
+  }
 }, [input]);
 const UserIcon = () => (
 <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-white shadow-md ring-2 ring-white">
