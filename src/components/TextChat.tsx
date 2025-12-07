@@ -83,7 +83,14 @@ const SimpleMarkdown = ({ text, isUser }: { text: string, isUser: boolean }) => 
 
   flushList('list-end');
 
-  return <div className={`text-[15px] ${isUser ? 'leading-relaxed text-white' : 'leading-8 text-slate-800'}`}>{elements}</div>;
+  return (
+  <div 
+    className={`text-[15px] ${isUser ? 'leading-relaxed' : 'leading-8'}`}
+    style={isUser ? { color: 'white', fontWeight: '700' } : { color: '#1e293b' }}
+  >
+    {elements}
+  </div>
+);
 };
 
 // --- COMPONENTS ---
